@@ -1,4 +1,129 @@
-<!-- ... existing code ... -->
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rutina Diaria PWA - Gestión de Tiempo, Alarmas y Multimedia</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #09090b;
+            color: #f4f4f5;
+        }
+
+        /* Custom subtle scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #18181b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+
+        /* Hide native time picker icon tint issues in dark mode */
+        input[type="time"]::-webkit-calendar-picker-indicator,
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.8);
+            cursor: pointer;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.9; }
+            70% { transform: scale(1.03); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.9; }
+        }
+        .alarm-active-ring {
+            animation: pulse-ring 1.5s infinite ease-in-out;
+        }
+
+        /* Fullscreen / Theater Mode for Video Panel */
+        .video-panel-fullscreen {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 45 !important;
+            background-color: #000000 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col lg:h-screen lg:overflow-hidden bg-zinc-950 text-zinc-100 antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- ===================================================================== -->
+    <!-- ACTIVE ALARM BANNER (Triggers at Start and End Time of Scheduled Tasks) -->
+    <!-- ===================================================================== -->
+    <div id="alarm-banner" class="hidden fixed inset-x-0 top-0 z-50 bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 text-white shadow-2xl border-b border-amber-300/30 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-white/20 rounded-xl alarm-active-ring">
+                    <i data-lucide="bell-ring" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <p id="alarm-banner-badge" class="text-[11px] font-bold uppercase tracking-wider text-amber-100">Alarma de Rutina</p>
+                    <h3 id="alarm-banner-title" class="text-sm sm:text-base font-bold leading-tight">Actividad en curso</h3>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button id="alarm-complete-btn" onclick="completeTaskFromAlarm()" class="hidden px-3 py-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-950 text-emerald-200 text-xs font-semibold border border-emerald-400/30 transition">
+                    Marcar completada
+                </button>
+                <button onclick="dismissAlarmBanner()" class="px-4 py-1.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-100 text-xs font-bold shadow transition">
+                    Detener Alarma
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TOAST NOTIFICATION CONTAINER                                          -->
+    <!-- ===================================================================== -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"></div>
+
+    <!-- ===================================================================== -->
+    <!-- MAIN SPLIT-SCREEN WORKSPACE (LEFT: PRODUCTIVITY | RIGHT: VIDEO)       -->
+    <!-- ===================================================================== -->
+    <div class="flex-1 flex flex-col lg:flex-row lg:h-full overflow-x-hidden">
+
+        <!-- ================================================================= -->
+        <!-- LEFT PANEL (45%): DAILY CALENDAR, SPOTIFY & DAILY EVALUATION      -->
+        <!-- ================================================================= -->
+        <aside id="left-productivity-panel" class="w-full lg:w-[45%] xl:w-[42%] flex flex-col lg:h-full bg-zinc-900/90 border-b lg:border-b-0 lg:border-r border-zinc-800/80">
+            
+            <!-- Top App Bar with Live Clock & Alarm Status -->
+            <header class="px-5 py-3.5 bg-zinc-950/80 border-b border-zinc-800/80 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                        <i data-lucide="calendar-clock" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-sm font-bold tracking-tight text-white">Rutina Diaria</h1>
+                        <p id="live-date-label" class="text-[11px] text-zinc-400 capitalize">Cargando fecha...</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <!-- Live Digital Clock -->
+                    <div class="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="live-clock" class="text-xs sm:text-sm font-mono font-bold text-zinc-100">00:00:00</span>
+                    </div>
+
                     <!-- Audio Test & Permission Helper -->
                     <button id="btn-test-alarm" onclick="testAlarmSound()" title="Probar sonido de alarma" class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition">
                         <i data-lucide="volume-2" class="w-3.5 h-3.5 text-amber-400"></i>
@@ -20,14 +145,1599 @@
             </header>
 
             <!-- ===================================================================== -->
-<!-- ... existing code ... -->
+            <!-- SCROLLABLE LEFT BODY                                              -->
+            <!-- ===================================================================== -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
+
+                <!-- ------------------------------------------------------------- -->
+                <!-- 1. CALENDAR & SCHEDULED TASKS WITH AUTOMATIC ALARMS & VIDEOS  -->
+                <!-- ------------------------------------------------------------- -->
+                <section class="bg-zinc-950/70 border border-zinc-800/90 rounded-2xl p-4 shadow-sm">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="calendar-days" class="w-4 h-4 text-indigo-400"></i>
+                            <h2 class="text-sm font-semibold text-white">Calendario de Actividades</h2>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span id="tasks-progress-pill" class="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                                0/0 listas
+                            </span>
+                            <button id="btn-toggle-calendar-view" onclick="toggleCalendarOverview()" class="px-2.5 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium flex items-center gap-1 transition" title="Ver calendario general">
+                                <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-indigo-400"></i>
+                                <span id="calendar-view-label">Agenda</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Date Navigation Strip -->
+                    <div class="flex items-center justify-between gap-2 bg-zinc-900/90 border border-zinc-800 rounded-xl p-1.5 mb-3">
+                        <button onclick="changeSelectedDate(-1)" class="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition" title="Día anterior">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </button>
+                        <div class="flex items-center gap-2">
+                            <input type="date" id="selected-date-input" onchange="onDateInputChange(this.value)" class="bg-transparent text-xs sm:text-sm font-semibold text-zinc-100 focus:outline-none cursor-pointer">
+                            <button id="btn-jump-today" onclick="jumpToToday()" class="hidden text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-500 transition">
+                                Hoy
+                            </button>
+                        </div>
+                        <button onclick="changeSelectedDate(1)" class="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition" title="Día siguiente">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- General Multi-Day Agenda Overview (Collapsible) -->
+                    <div id="calendar-overview-panel" class="hidden mb-3 bg-zinc-900/95 border border-indigo-500/30 rounded-xl p-3 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-semibold text-indigo-300 flex items-center gap-1.5">
+                                <i data-lucide="layers" class="w-3.5 h-3.5"></i> Días con actividades programadas
+                            </span>
+                            <button onclick="toggleCalendarOverview()" class="text-[11px] text-zinc-400 hover:text-white">Cerrar</button>
+                        </div>
+                        <div id="calendar-overview-list" class="max-h-36 overflow-y-auto space-y-1.5 pr-1"></div>
+                    </div>
+
+                    <!-- Add New Scheduled Task Form -->
+                    <form id="task-form" onsubmit="addDailyTask(event)" class="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-2.5 mb-3 space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-medium text-zinc-400 mb-1">De (Inicio + Alarma)</label>
+                                <input type="time" id="task-start-time" required class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-medium text-zinc-400 mb-1">a (Fin + Alarma)</label>
+                                <input type="time" id="task-end-time" required class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+
+                        <!-- Task Title + Linked Video Preset Selector -->
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                            <input type="text" id="task-title-input" placeholder="Ej. Bloque de ejercicio, lectura, revisión..." required class="sm:col-span-7 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500">
+                            <select id="task-video-preset-select" title="Automatizar lista de videos a esta hora" class="sm:col-span-5 bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500">
+                                <option value="">Sin video (solo alarma)</option>
+                                <option value="__maintenance_weekdays__">Lun - Vie (mantenimiento)</option>
+                            </select>
+                        </div>
+
+                        <!-- Quick Weekday Replication Controls -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-zinc-800/70">
+                            <div class="flex items-center gap-2">
+                                <label class="inline-flex items-center gap-1.5 cursor-pointer text-[11px] text-zinc-300 select-none">
+                                    <input type="checkbox" id="task-repeat-weekdays" class="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer">
+                                    <span>Repetir Lunes a Viernes (4 sem.)</span>
+                                </label>
+                            </div>
+                            <button type="submit" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-1 transition shrink-0">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Agregar
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Scheduled Tasks List -->
+                    <div id="tasks-list" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+                </section>
+
+                <!-- ------------------------------------------------------------- -->
+                <!-- 2. SPOTIFY EMBEDDED AUDIO PLAYER (2 SAVED PLAYLISTS VISIBLE)   -->
+                <!-- ------------------------------------------------------------- -->
+                <section class="bg-zinc-950/70 border border-zinc-800/90 rounded-2xl p-4 shadow-sm">
+                    <div class="flex items-center justify-between gap-2 mb-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#1DB954]"></span>
+                            <h2 class="text-sm font-semibold text-white">Mi Playlist de Spotify</h2>
+                        </div>
+                        <button onclick="toggleSpotifyUrlForm()" class="text-[11px] text-zinc-400 hover:text-[#1DB954] flex items-center gap-1 transition">
+                            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Agregar otra
+                        </button>
+                    </div>
+
+                    <!-- Quick Switcher Pills for Saved Spotify Playlists / Podcasts -->
+                    <div id="spotify-saved-pills" class="flex flex-wrap gap-1.5 mb-2.5"></div>
+
+                    <!-- Collapsible Custom Spotify URL Form -->
+                    <form id="spotify-url-form" onsubmit="updateSpotifyEmbed(event)" class="hidden mb-3 flex gap-2">
+                        <input type="text" id="spotify-url-input" placeholder="Pega enlace de playlist o podcast de Spotify..." class="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#1DB954]">
+                        <button type="submit" class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-bold transition">
+                            Guardar
+                        </button>
+                    </form>
+
+                    <!-- Spotify Iframe Container -->
+                    <div class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900">
+                        <iframe id="spotify-iframe" style="border-radius:12px" src="https://open.spotify.com/embed/playlist/5t14l7l2xQ603785n8d2aF?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+                    </div>
+                </section>
+
+                <!-- ------------------------------------------------------------- -->
+                <!-- 3. DAILY SELF-EVALUATION SURVEY + WHATSAPP / HISTORY SYNC     -->
+                <!-- ------------------------------------------------------------- -->
+                <section class="bg-zinc-950/70 border border-zinc-800/90 rounded-2xl p-4 shadow-sm">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="clipboard-check" class="w-4 h-4 text-emerald-400"></i>
+                            <h2 class="text-sm font-semibold text-white">Evaluación del Día</h2>
+                        </div>
+                        <button onclick="openEvaluationHistoryModal()" class="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition">
+                            <i data-lucide="history" class="w-3.5 h-3.5"></i> Historial y Sync (<span id="eval-history-count">0</span>)
+                        </button>
+                    </div>
+
+                    <form id="evaluation-form" onsubmit="saveDailyEvaluation(event)" class="space-y-3">
+                        <!-- Q1: Productivity Rating (1-5) -->
+                        <div>
+                            <label class="block text-xs font-medium text-zinc-300 mb-1.5">1. Nivel de productividad hoy (1 - 5):</label>
+                            <div id="rating-buttons" class="grid grid-cols-5 gap-1.5">
+                                <button type="button" data-rating="1" onclick="selectEvalRating(1)" class="rating-btn py-2 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-400 hover:border-zinc-600 transition">1</button>
+                                <button type="button" data-rating="2" onclick="selectEvalRating(2)" class="rating-btn py-2 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-400 hover:border-zinc-600 transition">2</button>
+                                <button type="button" data-rating="3" onclick="selectEvalRating(3)" class="rating-btn py-2 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-400 hover:border-zinc-600 transition">3</button>
+                                <button type="button" data-rating="4" onclick="selectEvalRating(4)" class="rating-btn py-2 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-400 hover:border-zinc-600 transition">4</button>
+                                <button type="button" data-rating="5" onclick="selectEvalRating(5)" class="rating-btn py-2 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-400 hover:border-zinc-600 transition">5</button>
+                            </div>
+                        </div>
+
+                        <!-- Q2: Main Achievement -->
+                        <div>
+                            <label for="eval-achievement" class="block text-xs font-medium text-zinc-300 mb-1">2. ¿Cuál fue tu mayor logro o avance hoy?</label>
+                            <input type="text" id="eval-achievement" required placeholder="Ej. Completé todos los bloques sin distracciones..." class="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
+                        </div>
+
+                        <!-- Q3: Improvement Note -->
+                        <div>
+                            <label for="eval-improvement" class="block text-xs font-medium text-zinc-300 mb-1">3. ¿Qué mejorarás para mañana?</label>
+                            <textarea id="eval-improvement" rows="2" required placeholder="Ej. Iniciar puntual la primera tarea..." class="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 resize-none"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <button type="submit" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950/50 transition">
+                                <i data-lucide="save" class="w-4 h-4"></i> Guardar Evaluación
+                            </button>
+                            <button type="button" onclick="sendEvaluationToWhatsApp()" class="py-2.5 px-3 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 text-[#25D366] border border-[#25D366]/40 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i> Enviar por WhatsApp
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+            </div>
+        </aside>
+
+        <!-- ================================================================= -->
+        <!-- RIGHT PANEL (55%): SEQUENTIAL YOUTUBE VIDEO PLAYLIST PLAYER       -->
+        <!-- ================================================================= -->
+        <main id="video-workspace-panel" class="w-full lg:w-[55%] xl:w-[58%] flex flex-col lg:h-full bg-zinc-950 transition-all">
+            
+            <!-- Video Top Control Bar -->
+            <div class="px-5 py-3.5 bg-zinc-900/60 border-b border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-xl bg-rose-600/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                            <i data-lucide="play-square" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-bold text-white leading-tight">Rutina de Videos</h2>
+                            <p id="video-day-badge" class="text-[11px] text-zinc-400">Sincronizado con el día</p>
+                        </div>
+                    </div>
+
+                    <!-- Auto-start with 1st Task Toggle -->
+                    <button id="btn-auto-first-task" onclick="toggleAutoStartFirstTask()" title="Iniciar Video 1 automáticamente al empezar la primera tarea del día" class="ml-1 px-2.5 py-1 rounded-xl border text-[11px] font-medium flex items-center gap-1.5 transition">
+                        <i data-lucide="zap" class="w-3 h-3"></i>
+                        <span id="auto-first-task-label">Auto-inicio 1ª tarea: ON</span>
+                    </button>
+                </div>
+
+                <!-- Preset Routine Selector & Playlist Actions -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <select id="video-preset-select" onchange="onVideoPresetChange(this.value)" class="bg-zinc-900 border border-zinc-700/80 rounded-xl px-3 py-1.5 text-xs font-medium text-zinc-100 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                        <!-- Populated dynamically -->
+                    </select>
+
+                    <button onclick="playNextVideo(true)" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Siguiente video">
+                        <span>Siguiente</span>
+                        <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i>
+                    </button>
+
+                    <!-- Fullscreen Toggle / Exit Button -->
+                    <button id="btn-toggle-video-fullscreen" onclick="toggleVideoFullscreenMode()" class="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/35 text-indigo-300 border border-indigo-500/40 text-xs font-semibold flex items-center gap-1 transition" title="Pantalla completa (ESC para salir)">
+                        <i id="video-fullscreen-icon" data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+                        <span id="video-fullscreen-label">Pantalla Completa</span>
+                    </button>
+
+                    <button onclick="openEditPlaylistModal()" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Editar enlaces de esta lista">
+                        <i data-lucide="settings-2" class="w-3.5 h-3.5 text-indigo-400"></i>
+                        <span class="hidden sm:inline">Editar Lista</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Video Stage -->
+            <div class="flex-1 flex flex-col p-4 sm:p-5 overflow-y-auto gap-4">
+                
+                <!-- Responsive 16:9 YouTube Player Wrapper -->
+                <div class="relative w-full aspect-video max-h-[65vh] bg-black rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl mx-auto">
+                    <div id="youtube-player-container" class="w-full h-full"></div>
+
+                    <!-- Autoplay Unmute Helper Banner (shown if browser requires user interaction for audio) -->
+                    <div id="unmute-helper-banner" class="hidden absolute bottom-3 left-3 right-3 bg-zinc-950/90 backdrop-blur border border-amber-500/40 rounded-xl px-4 py-2.5 flex items-center justify-between gap-2 z-10">
+                        <span class="text-xs text-amber-200 font-medium flex items-center gap-2">
+                            <i data-lucide="volume-x" class="w-4 h-4 text-amber-400"></i>
+                            Video iniciado en silencio por el navegador. Pulsa para activar el audio:
+                        </span>
+                        <button onclick="unmuteYouTubePlayer()" class="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition shrink-0">
+                            Activar Sonido
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Now Playing Info & Sequential Queue -->
+                <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex-1 flex flex-col justify-between gap-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <span id="now-playing-step" class="text-[11px] font-bold uppercase tracking-wider text-indigo-400">Video 1 de 4</span>
+                            <h3 id="now-playing-title" class="text-sm sm:text-base font-semibold text-white">Cargando reproductor...</h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="restartSequenceFromBeginning()" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-200 flex items-center gap-1.5 transition">
+                                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reiniciar Secuencia
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Clickable Video Queue Strip -->
+                    <div id="video-queue-list" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 pt-1"></div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 1: EDIT VIDEO PLAYLIST LINKS FOR CURRENT PRESET                 -->
+    <!-- ===================================================================== -->
+    <div id="edit-playlist-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <div>
+                    <h3 class="text-base font-bold text-white">Editar Videos de la Lista</h3>
+                    <p id="edit-playlist-subtitle" class="text-xs text-zinc-400">Personaliza los enlaces de YouTube que se reproducirán en secuencia</p>
+                </div>
+                <button onclick="closeEditPlaylistModal()" class="p-1.5 rounded-xl hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div id="edit-playlist-inputs" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-zinc-800">
+                <button type="button" onclick="addPlaylistSlotInput()" class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-200 flex items-center gap-1.5 transition">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Añadir Video
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="closeEditPlaylistModal()" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-300 transition">
+                        Cancelar
+                    </button>
+                    <button type="button" onclick="savePlaylistEdits()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 2: EVALUATION HISTORY, CSV EXPORT & WHATSAPP SYNC               -->
+    <!-- ===================================================================== -->
+    <div id="eval-history-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-2xl w-full p-5 shadow-2xl flex flex-col max-h-[88vh]">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-3 shrink-0">
+                <div>
+                    <h3 class="text-base font-bold text-white">Historial y Respaldo por WhatsApp</h3>
+                    <p class="text-xs text-zinc-400">Sincroniza tus evaluaciones y respaldo completo entre dispositivos</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="exportEvaluationsCSV()" class="px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i> Exportar CSV
+                    </button>
+                    <button onclick="closeEvaluationHistoryModal()" class="p-1.5 rounded-xl hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- WhatsApp Cross-Device Sync Bar -->
+            <div class="mt-3 p-3 rounded-xl bg-zinc-950/90 border border-[#25D366]/30 space-y-2.5 shrink-0">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-xs font-semibold text-[#25D366] flex items-center gap-1.5">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i> Sincronización directa vía WhatsApp
+                    </span>
+                    <input type="tel" id="whatsapp-phone-input" onchange="saveWhatsAppPhone(this.value)" placeholder="Tu número WhatsApp (ej. 5212291234567)" class="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#25D366] w-full sm:w-64">
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="sendFullBackupToWhatsApp()" class="px-3 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20bd5a] text-zinc-950 text-xs font-bold flex items-center gap-1.5 transition">
+                        <i data-lucide="send" class="w-3.5 h-3.5"></i> Enviar respaldo completo a mi WhatsApp
+                    </button>
+                    <button onclick="toggleImportBackupBox()" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition">
+                        <i data-lucide="clipboard-paste" class="w-3.5 h-3.5"></i> Pegar código recibido de WhatsApp
+                    </button>
+                </div>
+                <div id="import-backup-box" class="hidden space-y-2 pt-1">
+                    <textarea id="import-backup-textarea" rows="3" placeholder="Pega aquí el mensaje de respaldo (RUTINA_SYNC::...) que recibiste en WhatsApp..." class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-xs text-zinc-200 focus:outline-none focus:border-[#25D366]"></textarea>
+                    <button onclick="importBackupFromWhatsAppText()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">
+                        Restaurar datos en este dispositivo
+                    </button>
+                </div>
+            </div>
+
+            <div id="eval-history-list" class="flex-1 overflow-y-auto py-3 space-y-3"></div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- APPLICATION LOGIC (JAVASCRIPT)                                        -->
+    <!-- ===================================================================== -->
+    <script>
+        // =========================================================================
+        // 1. STORAGE KEYS & DEFAULT DATA CONFIGURATION
+        // =========================================================================
+        const STORAGE_KEYS = {
+            TASKS: 'rutina_pwa_tasks_v2',
+            EVALUATIONS: 'rutina_pwa_evaluations_v1',
+            SPOTIFY_LISTS: 'rutina_pwa_spotify_lists_v1',
+            SPOTIFY_ACTIVE: 'rutina_pwa_spotify_active_v1',
+            VIDEO_PRESETS: 'rutina_pwa_video_presets_v1',
+            TRIGGERED_ALARMS: 'rutina_pwa_triggered_alarms_v2',
+            WHATSAPP_PHONE: 'rutina_pwa_whatsapp_phone_v1',
+            AUTO_FIRST_TASK: 'rutina_pwa_auto_first_task_v1'
+        };
+
+        // Default YouTube Sequential Video Playlists
+        const DEFAULT_VIDEO_PRESETS = {
+            mwf: {
+                id: 'mwf',
+                name: 'Lunes / Miércoles / Viernes',
+                videos: [
+                    { title: 'Video 1 - Activación y Enfoque', url: 'https://www.youtube.com/watch?v=x20aA5oP3_k' },
+                    { title: 'Video 2 - Desarrollo Principal', url: 'https://www.youtube.com/watch?v=rD2B43y2z8Y' },
+                    { title: 'Video 3 - Ritmo Sostenido', url: 'https://www.youtube.com/watch?v=1f8yoFFdkcY' },
+                    { title: 'Video 4 - Cierre y Recuperación', url: 'https://www.youtube.com/watch?v=1e-e_xK-fI8' }
+                ]
+            },
+            tt: {
+                id: 'tt',
+                name: 'Martes / Jueves',
+                videos: [
+                    { title: 'Video 1 - Preparación Rápida', url: 'https://www.youtube.com/watch?v=h_t-gQ_q544' },
+                    { title: 'Video 2 - Bloque Dinámico', url: 'https://www.youtube.com/watch?v=866t1-e617c' },
+                    { title: 'Video 3 - Consolidación', url: 'https://www.youtube.com/watch?v=a-M5y-24-y0' },
+                    { title: 'Video 4 - Estiramiento Final', url: 'https://www.youtube.com/watch?v=06s-e7uD1sU' }
+                ]
+            },
+            weekend: {
+                id: 'weekend',
+                name: 'Fin de Semana / Libre',
+                videos: [
+                    { title: 'Video 1 - Sesión Ligera', url: 'https://www.youtube.com/watch?v=x20aA5oP3_k' },
+                    { title: 'Video 2 - Movilidad General', url: 'https://www.youtube.com/watch?v=h_t-gQ_q544' }
+                ]
+            }
+        };
+
+        // Default Saved Spotify Playlists / Podcasts (Always visible as quick buttons)
+        const DEFAULT_SPOTIFY_LISTS = [
+            {
+                id: 'sp_default_1',
+                name: 'Lista Principal (Focus)',
+                embedUrl: 'https://open.spotify.com/embed/playlist/5t14l7l2xQ603785n8d2aF?utm_source=generator&theme=0'
+            },
+            {
+                id: 'sp_default_2',
+                name: 'Lista Secundaria / Podcast',
+                embedUrl: 'https://open.spotify.com/embed/show/2Shpxw7dPoxRJCdfFXTWLE?utm_source=generator&theme=0'
+            }
+        ];
+
+        // Global Application State
+        let state = {
+            selectedDate: getTodayStr(),
+            editingTaskId: null,
+            calendarOverviewOpen: false,
+            tasksByDate: JSON.parse(localStorage.getItem(STORAGE_KEYS.TASKS)) || {},
+            evaluations: JSON.parse(localStorage.getItem(STORAGE_KEYS.EVALUATIONS)) || [],
+            spotifyLists: JSON.parse(localStorage.getItem(STORAGE_KEYS.SPOTIFY_LISTS)) || DEFAULT_SPOTIFY_LISTS,
+            activeSpotifyId: localStorage.getItem(STORAGE_KEYS.SPOTIFY_ACTIVE) || 'sp_default_1',
+            presets: JSON.parse(localStorage.getItem(STORAGE_KEYS.VIDEO_PRESETS)) || DEFAULT_VIDEO_PRESETS,
+            activePresetId: 'mwf',
+            currentVideoIndex: 0,
+            selectedEvalRating: 5,
+            autoStartFirstTask: localStorage.getItem(STORAGE_KEYS.AUTO_FIRST_TASK) !== 'false',
+            ytPlayer: null,
+            ytReady: false,
+            pendingAutoplay: false,
             triggeredAlarms: JSON.parse(localStorage.getItem(STORAGE_KEYS.TRIGGERED_ALARMS)) || {},
             activeAlarmTaskId: null,
             whatsappSyncPhone: localStorage.getItem(STORAGE_KEYS.WHATSAPP_PHONE) || '',
             isVideoExpanded: false,
             wakeLockSentinel: null
         };
-<!-- ... existing code ... -->
+
+        // =========================================================================
+        // 2. DATE & UTILITY HELPERS
+        // =========================================================================
+        function getTodayStr() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function formatSpanishDate(dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            return dateObj.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        function formatShortSpanishDate(dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            return dateObj.toLocaleDateString('es-ES', {
+                weekday: 'short',
+                day: '2-digit',
+                month: 'short'
+            });
+        }
+
+        function getPresetIdForDate(dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const dayOfWeek = new Date(y, m - 1, d).getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+            if (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5) return 'mwf';
+            if (dayOfWeek === 2 || dayOfWeek === 4) return 'tt';
+            return 'weekend';
+        }
+
+        function extractYouTubeId(urlOrId) {
+            if (!urlOrId) return '';
+            const trimmed = urlOrId.trim();
+            if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+            const regExp = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+            const match = trimmed.match(regExp);
+            return match ? match[1] : '';
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const colors = {
+                info: 'bg-zinc-900 border-zinc-700 text-zinc-100',
+                success: 'bg-emerald-950/95 border-emerald-500/40 text-emerald-200',
+                warning: 'bg-amber-950/95 border-amber-500/40 text-amber-200'
+            };
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-xs font-medium flex items-center justify-between gap-3 transition-all duration-300 ${colors[type] || colors.info}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3400);
+        }
+
+        // =========================================================================
+        // 3. WEB AUDIO SYNTHESIZER FOR AUTOMATIC START / END ALARMS
+        // =========================================================================
+        let audioCtx = null;
+
+        function playAlarmChime(type = 'start') {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const now = audioCtx.currentTime;
+                const notes = type === 'start'
+                    ? [523.25, 659.25, 783.99, 1046.50] // Ascending chime (C5-E5-G5-C6)
+                    : [783.99, 659.25, 587.33, 523.25]; // Gentle closing chime (G5-E5-D5-C5)
+
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = type === 'start' ? 'triangle' : 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.16);
+
+                    gain.gain.setValueAtTime(0.001, now + idx * 0.16);
+                    gain.gain.exponentialRampToValueAtTime(0.28, now + idx * 0.16 + 0.04);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.16 + 0.45);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.16);
+                    osc.stop(now + idx * 0.16 + 0.48);
+                });
+            } catch (e) {
+                console.warn('Audio chime blocked until user interaction:', e);
+            }
+        }
+
+        function testAlarmSound() {
+            playAlarmChime('start');
+            showToast('Sonido de alarma activado y probado correctamente.', 'success');
+        }
+
+        function triggerTaskAlarm(task, phase) {
+            const banner = document.getElementById('alarm-banner');
+            const badge = document.getElementById('alarm-banner-badge');
+            const title = document.getElementById('alarm-banner-title');
+            const completeBtn = document.getElementById('alarm-complete-btn');
+
+            state.activeAlarmTaskId = task.id;
+            playAlarmChime(phase);
+
+            if (phase === 'start') {
+                badge.textContent = `Inicio de Actividad • ${task.startTime} - ${task.endTime}`;
+                title.textContent = `Comienza: ${task.title}`;
+                completeBtn.classList.add('hidden');
+            } else {
+                badge.textContent = `Tiempo Finalizado • ${task.startTime} - ${task.endTime}`;
+                title.textContent = `Terminó el bloque: ${task.title}`;
+                completeBtn.classList.remove('hidden');
+            }
+
+            banner.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function dismissAlarmBanner() {
+            document.getElementById('alarm-banner').classList.add('hidden');
+            state.activeAlarmTaskId = null;
+        }
+
+        function completeTaskFromAlarm() {
+            if (state.activeAlarmTaskId) {
+                toggleTaskCompleted(state.activeAlarmTaskId, true);
+            }
+            dismissAlarmBanner();
+        }
+
+        // =========================================================================
+        // 4. CALENDAR, RECURRING TASKS, EDITING & REAL-TIME ALARM ENGINE
+        // =========================================================================
+        function seedInitialTasksIfEmpty() {
+            if (Object.keys(state.tasksByDate).length === 0) {
+                const today = getTodayStr();
+                state.tasksByDate[today] = [
+                    { id: 't1', startTime: '07:30', endTime: '08:15', title: 'Rutina de videos y activación física', completed: false, videoPresetId: 'mwf' },
+                    { id: 't2', startTime: '09:00', endTime: '11:00', title: 'Bloque de trabajo profundo con Spotify', completed: false, videoPresetId: '' },
+                    { id: 't3', startTime: '18:30', endTime: '19:00', title: 'Revisión de logros y evaluación del día', completed: false, videoPresetId: '' }
+                ];
+                saveTasks();
+            }
+        }
+
+        function saveTasks() {
+            localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(state.tasksByDate));
+        }
+
+        function renderCalendar() {
+            const dateInput = document.getElementById('selected-date-input');
+            const todayBtn = document.getElementById('btn-jump-today');
+            dateInput.value = state.selectedDate;
+
+            if (state.selectedDate !== getTodayStr()) {
+                todayBtn.classList.remove('hidden');
+            } else {
+                todayBtn.classList.add('hidden');
+            }
+
+            populateTaskVideoPresetOptions('task-video-preset-select');
+            renderTasksForSelectedDate();
+            if (state.calendarOverviewOpen) {
+                renderCalendarOverview();
+            }
+        }
+
+        function populateTaskVideoPresetOptions(selectId, selectedValue = '') {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            const currentVal = selectedValue !== '' ? selectedValue : select.value;
+            select.innerHTML = `
+                <option value="">Sin video (solo alarma)</option>
+                <option value="__maintenance_weekdays__">Lun - Vie (mantenimiento)</option>
+            `;
+            Object.values(state.presets).forEach(preset => {
+                const opt = document.createElement('option');
+                opt.value = preset.id;
+                opt.textContent = `▶ ${preset.name}`;
+                select.appendChild(opt);
+            });
+            select.value = currentVal || '';
+        }
+
+        function toggleCalendarOverview() {
+            state.calendarOverviewOpen = !state.calendarOverviewOpen;
+            const panel = document.getElementById('calendar-overview-panel');
+            if (state.calendarOverviewOpen) {
+                panel.classList.remove('hidden');
+                renderCalendarOverview();
+            } else {
+                panel.classList.add('hidden');
+            }
+        }
+
+        function renderCalendarOverview() {
+            const listEl = document.getElementById('calendar-overview-list');
+            const datesWithTasks = Object.keys(state.tasksByDate)
+                .filter(d => (state.tasksByDate[d] || []).length > 0)
+                .sort();
+
+            if (datesWithTasks.length === 0) {
+                listEl.innerHTML = `<p class="text-[11px] text-zinc-500 text-center py-2">Aún no hay días programados en el calendario.</p>`;
+                return;
+            }
+
+            listEl.innerHTML = datesWithTasks.map(dateKey => {
+                const dayTasks = state.tasksByDate[dateKey];
+                const doneCount = dayTasks.filter(t => t.completed).length;
+                const isSelected = dateKey === state.selectedDate;
+                return `
+                    <button type="button" onclick="selectDateFromOverview('${dateKey}')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs transition ${isSelected ? 'bg-indigo-600/30 border border-indigo-500/50 text-white' : 'bg-zinc-950/70 hover:bg-zinc-800 text-zinc-300 border border-zinc-800/80'}">
+                        <span class="font-medium capitalize">${formatShortSpanishDate(dateKey)} <span class="text-zinc-500 text-[10px]">(${dateKey})</span></span>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-900 text-indigo-300">${doneCount}/${dayTasks.length}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function selectDateFromOverview(dateStr) {
+            state.selectedDate = dateStr;
+            state.editingTaskId = null;
+            renderCalendar();
+            const suggestedPreset = getPresetIdForDate(dateStr);
+            if (state.presets[suggestedPreset]) {
+                switchVideoPreset(suggestedPreset, false);
+            }
+        }
+
+        function changeSelectedDate(offsetDays) {
+            const [y, m, d] = state.selectedDate.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, d + offsetDays);
+            const nextStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+            state.selectedDate = nextStr;
+            state.editingTaskId = null;
+            renderCalendar();
+
+            const suggestedPreset = getPresetIdForDate(nextStr);
+            if (state.presets[suggestedPreset]) {
+                switchVideoPreset(suggestedPreset, false);
+            }
+        }
+
+        function onDateInputChange(newDateStr) {
+            if (!newDateStr) return;
+            state.selectedDate = newDateStr;
+            state.editingTaskId = null;
+            renderCalendar();
+        }
+
+        function jumpToToday() {
+            state.selectedDate = getTodayStr();
+            state.editingTaskId = null;
+            renderCalendar();
+        }
+
+        function addDailyTask(e) {
+            e.preventDefault();
+            const startInput = document.getElementById('task-start-time');
+            const endInput = document.getElementById('task-end-time');
+            const titleInput = document.getElementById('task-title-input');
+            const videoPresetSelect = document.getElementById('task-video-preset-select');
+            const repeatWeekdays = document.getElementById('task-repeat-weekdays').checked;
+
+            const startTime = startInput.value;
+            const endTime = endInput.value;
+            const title = titleInput.value.trim();
+            const videoPresetId = videoPresetSelect ? videoPresetSelect.value : '';
+
+            if (!startTime || !endTime || !title) return;
+            if (endTime <= startTime) {
+                showToast('La hora de fin ("a") debe ser posterior a la hora de inicio ("De").', 'warning');
+                return;
+            }
+
+            if (repeatWeekdays) {
+                const count = scheduleTaskAcrossDays(state.selectedDate, startTime, endTime, title, videoPresetId, 'weekdays', 28);
+                showToast(`Tarea programada de lunes a viernes (${count} días) con alarma automática.`, 'success');
+            } else {
+                if (!state.tasksByDate[state.selectedDate]) {
+                    state.tasksByDate[state.selectedDate] = [];
+                }
+                state.tasksByDate[state.selectedDate].push({
+                    id: 'task_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                    startTime,
+                    endTime,
+                    title,
+                    videoPresetId,
+                    completed: false
+                });
+                state.tasksByDate[state.selectedDate].sort((a, b) => a.startTime.localeCompare(b.startTime));
+                saveTasks();
+                renderCalendar();
+                showToast(`Tarea "${title}" agendada (${startTime} - ${endTime}).`, 'success');
+            }
+
+            titleInput.value = '';
+            document.getElementById('task-repeat-weekdays').checked = false;
+        }
+
+        function scheduleTaskAcrossDays(baseDateStr, startTime, endTime, title, videoPresetId, mode, horizonDays) {
+            const [y, m, d] = baseDateStr.split('-').map(Number);
+            const seriesId = 'series_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+            let addedCount = 0;
+
+            for (let i = 0; i < horizonDays; i++) {
+                const candidate = new Date(y, m - 1, d + i);
+                const dow = candidate.getDay(); // 0=Sun, 6=Sat
+                if (mode === 'weekdays' && (dow === 0 || dow === 6)) continue;
+
+                const dateKey = `${candidate.getFullYear()}-${String(candidate.getMonth() + 1).padStart(2, '0')}-${String(candidate.getDate()).padStart(2, '0')}`;
+                if (!state.tasksByDate[dateKey]) state.tasksByDate[dateKey] = [];
+
+                const exists = state.tasksByDate[dateKey].some(
+                    t => t.startTime === startTime && t.endTime === endTime && t.title.toLowerCase() === title.toLowerCase()
+                );
+                if (!exists) {
+                    state.tasksByDate[dateKey].push({
+                        id: 'task_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 5),
+                        seriesId,
+                        startTime,
+                        endTime,
+                        title,
+                        videoPresetId: videoPresetId || '',
+                        completed: false
+                    });
+                    state.tasksByDate[dateKey].sort((a, b) => a.startTime.localeCompare(b.startTime));
+                    addedCount++;
+                }
+            }
+
+            saveTasks();
+            renderCalendar();
+            return addedCount;
+        }
+
+        function findRelatedSeriesTasks(targetTask, baseDateStr) {
+            const matches = [];
+            Object.keys(state.tasksByDate).forEach(dateKey => {
+                (state.tasksByDate[dateKey] || []).forEach(t => {
+                    const sameSeries = targetTask.seriesId && t.seriesId === targetTask.seriesId;
+                    const sameSignature = !targetTask.seriesId &&
+                        dateKey >= baseDateStr &&
+                        t.startTime === targetTask.startTime &&
+                        t.endTime === targetTask.endTime &&
+                        t.title.toLowerCase() === targetTask.title.toLowerCase();
+
+                    if (sameSeries || sameSignature) {
+                        matches.push({ dateKey, task: t });
+                    }
+                });
+            });
+            return matches;
+        }
+
+        function replicateExistingTaskWeekdays(taskId) {
+            const tasks = state.tasksByDate[state.selectedDate] || [];
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            const count = scheduleTaskAcrossDays(state.selectedDate, task.startTime, task.endTime, task.title, task.videoPresetId || '', 'weekdays', 28);
+            showToast(`Replicada de lunes a viernes (${count} días adicionales).`, 'success');
+        }
+
+        function startEditTask(taskId) {
+            state.editingTaskId = taskId;
+            renderTasksForSelectedDate();
+        }
+
+        function cancelEditTask() {
+            state.editingTaskId = null;
+            renderTasksForSelectedDate();
+        }
+
+        function saveEditedTask(taskId) {
+            const tasks = state.tasksByDate[state.selectedDate] || [];
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            const newStart = document.getElementById(`edit-start-${taskId}`).value;
+            const newEnd = document.getElementById(`edit-end-${taskId}`).value;
+            const newTitle = document.getElementById(`edit-title-${taskId}`).value.trim();
+            const newVideoPresetId = document.getElementById(`edit-video-${taskId}`)?.value || '';
+            const propagateSeriesEl = document.getElementById(`edit-propagate-${taskId}`);
+            const shouldPropagate = propagateSeriesEl ? propagateSeriesEl.checked : false;
+
+            if (!newStart || !newEnd || !newTitle) {
+                showToast('Completa horario y descripción para guardar.', 'warning');
+                return;
+            }
+            if (newEnd <= newStart) {
+                showToast('La hora de fin ("a") debe ser mayor que la de inicio ("De").', 'warning');
+                return;
+            }
+
+            const relatedMatches = shouldPropagate ? findRelatedSeriesTasks(task, state.selectedDate) : [{ dateKey: state.selectedDate, task }];
+            const sharedSeriesId = task.seriesId || (relatedMatches.length > 1 ? 'series_' + Date.now() : undefined);
+
+            relatedMatches.forEach(({ dateKey, task: item }) => {
+                const oldStart = item.startTime;
+                const oldEnd = item.endTime;
+
+                item.startTime = newStart;
+                item.endTime = newEnd;
+                item.title = newTitle;
+                item.videoPresetId = newVideoPresetId;
+                if (sharedSeriesId) item.seriesId = sharedSeriesId;
+
+                // Clear triggered alarm flags for this date if times changed
+                delete state.triggeredAlarms[`${dateKey}_${item.id}_start_${oldStart}`];
+                delete state.triggeredAlarms[`${dateKey}_${item.id}_end_${oldEnd}`];
+
+                if (state.tasksByDate[dateKey]) {
+                    state.tasksByDate[dateKey].sort((a, b) => a.startTime.localeCompare(b.startTime));
+                }
+            });
+
+            localStorage.setItem(STORAGE_KEYS.TRIGGERED_ALARMS, JSON.stringify(state.triggeredAlarms));
+            state.editingTaskId = null;
+            saveTasks();
+            renderCalendar();
+
+            if (relatedMatches.length > 1) {
+                showToast(`Serie actualizada automáticamente en ${relatedMatches.length} días.`, 'success');
+            } else {
+                showToast('Actividad y horario actualizados.', 'success');
+            }
+        }
+
+        function toggleTaskCompleted(taskId, forceState = null) {
+            const tasks = state.tasksByDate[state.selectedDate] || [];
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            task.completed = forceState !== null ? forceState : !task.completed;
+            saveTasks();
+            renderCalendar();
+        }
+
+        function deleteTask(taskId) {
+            const tasks = state.tasksByDate[state.selectedDate] || [];
+            state.tasksByDate[state.selectedDate] = tasks.filter(t => t.id !== taskId);
+            if (state.editingTaskId === taskId) state.editingTaskId = null;
+            saveTasks();
+            renderCalendar();
+        }
+
+        function renderTasksForSelectedDate() {
+            const listEl = document.getElementById('tasks-list');
+            const progressPill = document.getElementById('tasks-progress-pill');
+            const tasks = state.tasksByDate[state.selectedDate] || [];
+
+            const completedCount = tasks.filter(t => t.completed).length;
+            progressPill.textContent = `${completedCount}/${tasks.length} listas`;
+
+            if (tasks.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-6 px-3 border border-dashed border-zinc-800 rounded-xl">
+                        <p class="text-xs text-zinc-500">No hay actividades programadas para este día.</p>
+                        <p class="text-[11px] text-zinc-600 mt-1">Usa el formulario superior para agendar con alarma de inicio y fin.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const now = new Date();
+            const isViewingToday = state.selectedDate === getTodayStr();
+            const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            listEl.innerHTML = tasks.map((task, idx) => {
+                const isFirstTask = idx === 0;
+                const isCurrentSlot = isViewingToday && !task.completed && currentHHMM >= task.startTime && currentHHMM < task.endTime;
+                const isEditing = state.editingTaskId === task.id;
+                const isMaintenanceMode = task.videoPresetId === '__maintenance_weekdays__';
+                const linkedPreset = !isMaintenanceMode && task.videoPresetId && state.presets[task.videoPresetId]
+                    ? state.presets[task.videoPresetId]
+                    : null;
+
+                if (isEditing) {
+                    const relatedSeries = findRelatedSeriesTasks(task, state.selectedDate);
+                    const hasSeries = relatedSeries.length > 1;
+                    const presetOptionsHtml = `
+                        <option value="" ${!task.videoPresetId ? 'selected' : ''}>Sin video (solo alarma)</option>
+                        <option value="__maintenance_weekdays__" ${isMaintenanceMode ? 'selected' : ''}>Lun - Vie (mantenimiento)</option>
+                    ` + Object.values(state.presets).map(p =>
+                        `<option value="${p.id}" ${task.videoPresetId === p.id ? 'selected' : ''}>▶ ${p.name}</option>`
+                    ).join('');
+
+                    return `
+                        <div class="p-3 rounded-xl border border-indigo-500/60 bg-zinc-900 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-semibold text-indigo-300">Editando actividad</span>
+                                <span class="text-[10px] text-zinc-500">Modifica hora, lista o descripción</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] text-zinc-400 mb-0.5">De</label>
+                                    <input type="time" id="edit-start-${task.id}" value="${task.startTime}" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-zinc-400 mb-0.5">a</label>
+                                    <input type="time" id="edit-end-${task.id}" value="${task.endTime}" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                                </div>
+                            </div>
+                            <input type="text" id="edit-title-${task.id}" value="${task.title.replace(/"/g, '&quot;')}" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            <div>
+                                <label class="block text-[10px] text-zinc-400 mb-0.5">Lista de videos al iniciar esta tarea</label>
+                                <select id="edit-video-${task.id}" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500">
+                                    ${presetOptionsHtml}
+                                </select>
+                            </div>
+                            ${hasSeries ? `
+                            <label class="flex items-center gap-2 p-2 rounded-lg bg-indigo-950/50 border border-indigo-500/30 cursor-pointer select-none">
+                                <input type="checkbox" id="edit-propagate-${task.id}" checked class="w-3.5 h-3.5 rounded accent-indigo-500 cursor-pointer">
+                                <span class="text-[11px] text-indigo-200">Actualizar automáticamente en toda la serie (${relatedSeries.length} días)</span>
+                            </label>
+                            ` : ''}
+                            <div class="flex items-center justify-end gap-2 pt-1">
+                                <button type="button" onclick="cancelEditTask()" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 transition">Cancelar</button>
+                                <button type="button" onclick="saveEditedTask('${task.id}')" class="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition">Guardar</button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="group flex items-center justify-between gap-2.5 p-2.5 rounded-xl border transition ${
+                        task.completed
+                            ? 'bg-zinc-900/40 border-zinc-800/60 opacity-60'
+                            : isCurrentSlot
+                                ? 'bg-indigo-950/35 border-indigo-500/50 shadow-sm'
+                                : 'bg-zinc-900/80 border-zinc-800 hover:border-zinc-700'
+                    }">
+                        <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                            <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTaskCompleted('${task.id}')" class="mt-0.5 w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <span class="text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded bg-zinc-950 text-indigo-300 border border-zinc-800">
+                                        De ${task.startTime} a ${task.endTime}
+                                    </span>
+                                    ${isFirstTask && state.autoStartFirstTask ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30" title="Inicia el Video 1 automáticamente">1ª • Auto-Video</span>' : ''}
+                                    ${linkedPreset ? `<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30" title="Inicia esta lista automáticamente">▶ ${linkedPreset.name}</span>` : ''}
+                                    ${isMaintenanceMode ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Lun - Vie (mantenimiento)</span>' : ''}
+                                    ${isCurrentSlot ? '<span class="text-[10px] font-bold uppercase text-emerald-400">En curso</span>' : ''}
+                                </div>
+                                <p class="text-xs sm:text-sm font-medium mt-1 break-words ${task.completed ? 'line-through text-zinc-500' : 'text-zinc-100'}">${task.title}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button onclick="replicateExistingTaskWeekdays('${task.id}')" title="Repetir de lunes a viernes (4 sem.)" class="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 transition">
+                                <i data-lucide="repeat" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button onclick="startEditTask('${task.id}')" title="Modificar horario o texto" class="p-1.5 rounded-lg text-zinc-400 hover:text-indigo-400 hover:bg-zinc-800 transition">
+                                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button onclick="deleteTask('${task.id}')" title="Eliminar tarea" class="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-zinc-800 transition">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // Real-Time Clock & Automatic Start/End Alarm Monitor + Auto-Video Trigger
+        function updateClockAndAlarms() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            const currentHHMM = `${hh}:${mm}`;
+            const todayStr = getTodayStr();
+
+            document.getElementById('live-clock').textContent = `${hh}:${mm}:${ss}`;
+            document.getElementById('live-date-label').textContent = formatSpanishDate(todayStr);
+
+            const todayTasks = [...(state.tasksByDate[todayStr] || [])].sort((a, b) => a.startTime.localeCompare(b.startTime));
+            todayTasks.forEach((task, index) => {
+                if (task.completed) return;
+
+                const startKey = `${todayStr}_${task.id}_start_${task.startTime}`;
+                const endKey = `${todayStr}_${task.id}_end_${task.endTime}`;
+
+                if (currentHHMM === task.startTime && !state.triggeredAlarms[startKey]) {
+                    state.triggeredAlarms[startKey] = true;
+                    localStorage.setItem(STORAGE_KEYS.TRIGGERED_ALARMS, JSON.stringify(state.triggeredAlarms));
+                    triggerTaskAlarm(task, 'start');
+
+                    // Priority 1: Task-specific linked video playlist
+                    if (task.videoPresetId && task.videoPresetId !== '__maintenance_weekdays__' && state.presets[task.videoPresetId]) {
+                        switchVideoPreset(task.videoPresetId, true);
+                        showToast(`Horario (${task.startTime}): iniciando "${state.presets[task.videoPresetId].name}" en Video 1.`, 'info');
+                    }
+                    // Priority 2: Fallback auto-start on the first scheduled task of the day
+                    else if (index === 0 && state.autoStartFirstTask) {
+                        const dayPresetId = getPresetIdForDate(todayStr);
+                        switchVideoPreset(dayPresetId, true);
+                        showToast(`Inicio de primera tarea (${task.startTime}): reproduciendo Video 1 automáticamente.`, 'info');
+                    }
+                }
+
+                if (currentHHMM === task.endTime && !state.triggeredAlarms[endKey]) {
+                    state.triggeredAlarms[endKey] = true;
+                    localStorage.setItem(STORAGE_KEYS.TRIGGERED_ALARMS, JSON.stringify(state.triggeredAlarms));
+                    triggerTaskAlarm(task, 'end');
+                }
+            });
+        }
+
+        // =========================================================================
+        // 5. SPOTIFY EMBED CONTROLLER (2 DEFAULT PLAYLISTS ALWAYS VISIBLE)
+        // =========================================================================
+        function toSpotifyEmbedUrl(rawUrl) {
+            const trimmed = rawUrl.trim();
+            if (!trimmed) return null;
+            if (trimmed.includes('open.spotify.com/embed/')) return trimmed;
+
+            const match = trimmed.match(/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(playlist|album|track|episode|show)\/([a-zA-Z0-9]+)/);
+            if (match) {
+                return `https://open.spotify.com/embed/${match[1]}/${match[2]}?utm_source=generator&theme=0`;
+            }
+            return null;
+        }
+
+        function saveSpotifyState() {
+            localStorage.setItem(STORAGE_KEYS.SPOTIFY_LISTS, JSON.stringify(state.spotifyLists));
+            localStorage.setItem(STORAGE_KEYS.SPOTIFY_ACTIVE, state.activeSpotifyId);
+        }
+
+        function renderSpotifySwitcher() {
+            const container = document.getElementById('spotify-saved-pills');
+            const iframe = document.getElementById('spotify-iframe');
+
+            if (!state.spotifyLists || state.spotifyLists.length === 0) {
+                state.spotifyLists = [...DEFAULT_SPOTIFY_LISTS];
+            }
+
+            let activeItem = state.spotifyLists.find(item => item.id === state.activeSpotifyId) || state.spotifyLists[0];
+            state.activeSpotifyId = activeItem.id;
+
+            if (iframe.src !== activeItem.embedUrl) {
+                iframe.src = activeItem.embedUrl;
+            }
+
+            const canDelete = state.spotifyLists.length > 1;
+            container.innerHTML = state.spotifyLists.map(item => {
+                const isActive = item.id === state.activeSpotifyId;
+                return `
+                    <div class="inline-flex items-center rounded-xl text-xs font-medium transition border ${
+                        isActive
+                            ? 'bg-[#1DB954]/20 border-[#1DB954]/60 text-[#1ed760]'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    }">
+                        <button type="button" onclick="selectSpotifyList('${item.id}')" class="px-3 py-1.5 flex items-center gap-1.5">
+                            <i data-lucide="music" class="w-3 h-3"></i>
+                            <span>${item.name}</span>
+                        </button>
+                        ${canDelete ? `
+                        <button type="button" onclick="deleteSpotifyList('${item.id}')" title="Eliminar playlist" class="pr-2 pl-1 py-1.5 text-zinc-500 hover:text-rose-400 transition">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function deleteSpotifyList(listId) {
+            if (state.spotifyLists.length <= 1) {
+                showToast('Debes conservar al menos una playlist en la lista.', 'warning');
+                return;
+            }
+            const removed = state.spotifyLists.find(item => item.id === listId);
+            state.spotifyLists = state.spotifyLists.filter(item => item.id !== listId);
+            if (state.activeSpotifyId === listId) {
+                state.activeSpotifyId = state.spotifyLists[0].id;
+            }
+            saveSpotifyState();
+            renderSpotifySwitcher();
+            showToast(`Playlist "${removed ? removed.name : ''}" eliminada.`, 'info');
+        }
+
+        function selectSpotifyList(listId) {
+            state.activeSpotifyId = listId;
+            saveSpotifyState();
+            renderSpotifySwitcher();
+        }
+
+        function toggleSpotifyUrlForm() {
+            const form = document.getElementById('spotify-url-form');
+            form.classList.toggle('hidden');
+        }
+
+        function updateSpotifyEmbed(e) {
+            e.preventDefault();
+            const input = document.getElementById('spotify-url-input');
+            const embedUrl = toSpotifyEmbedUrl(input.value);
+            if (!embedUrl) {
+                showToast('Enlace de Spotify no válido. Copia el enlace desde Compartir -> Copiar enlace.', 'warning');
+                return;
+            }
+            const newId = 'sp_' + Date.now();
+            const newLabel = `Lista ${state.spotifyLists.length + 1}`;
+            state.spotifyLists.push({ id: newId, name: newLabel, embedUrl });
+            state.activeSpotifyId = newId;
+            saveSpotifyState();
+            renderSpotifySwitcher();
+            input.value = '';
+            document.getElementById('spotify-url-form').classList.add('hidden');
+            showToast('Nueva lista de Spotify agregada y activada.', 'success');
+        }
+
+        // =========================================================================
+        // 6. DAILY SELF-EVALUATION SURVEY, CSV EXPORT & WHATSAPP SYNC
+        // =========================================================================
+        function selectEvalRating(rating) {
+            state.selectedEvalRating = rating;
+            document.querySelectorAll('.rating-btn').forEach(btn => {
+                const btnRating = Number(btn.dataset.rating);
+                if (btnRating === rating) {
+                    btn.className = 'rating-btn py-2 rounded-xl border border-emerald-500 bg-emerald-600 text-xs font-bold text-white shadow transition';
+                } else {
+                    btn.className = 'rating-btn py-2 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-400 hover:border-zinc-600 transition';
+                }
+            });
+        }
+
+        function saveDailyEvaluation(e) {
+            e.preventDefault();
+            const achievement = document.getElementById('eval-achievement').value.trim();
+            const improvement = document.getElementById('eval-improvement').value.trim();
+            if (!achievement || !improvement) return;
+
+            const todayTasks = state.tasksByDate[state.selectedDate] || [];
+            const completedTasks = todayTasks.filter(t => t.completed).length;
+
+            const entry = {
+                id: 'eval_' + Date.now(),
+                date: state.selectedDate,
+                timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+                rating: state.selectedEvalRating,
+                achievement,
+                improvement,
+                tasksSummary: `${completedTasks}/${todayTasks.length}`
+            };
+
+            state.evaluations = state.evaluations.filter(item => item.date !== state.selectedDate);
+            state.evaluations.unshift(entry);
+
+            localStorage.setItem(STORAGE_KEYS.EVALUATIONS, JSON.stringify(state.evaluations));
+            updateEvaluationHistoryCount();
+
+            document.getElementById('eval-achievement').value = '';
+            document.getElementById('eval-improvement').value = '';
+            showToast('Evaluación diaria guardada en tu historial.', 'success');
+        }
+
+        function updateEvaluationHistoryCount() {
+            document.getElementById('eval-history-count').textContent = state.evaluations.length;
+        }
+
+        function saveWhatsAppPhone(phoneVal) {
+            state.whatsappSyncPhone = phoneVal.replace(/[^\d]/g, '');
+            localStorage.setItem(STORAGE_KEYS.WHATSAPP_PHONE, state.whatsappSyncPhone);
+        }
+
+        function openWhatsAppWithText(messageText) {
+            const cleanPhone = (state.whatsappSyncPhone || '').replace(/[^\d]/g, '');
+            const encoded = encodeURIComponent(messageText);
+            const url = cleanPhone
+                ? `https://wa.me/${cleanPhone}?text=${encoded}`
+                : `https://api.whatsapp.com/send?text=${encoded}`;
+            window.open(url, '_blank');
+        }
+
+        function sendEvaluationToWhatsApp() {
+            const achievementInput = document.getElementById('eval-achievement').value.trim();
+            const improvementInput = document.getElementById('eval-improvement').value.trim();
+            const savedToday = state.evaluations.find(ev => ev.date === state.selectedDate);
+
+            const rating = achievementInput ? state.selectedEvalRating : (savedToday ? savedToday.rating : state.selectedEvalRating);
+            const achievement = achievementInput || (savedToday ? savedToday.achievement : 'Sin registrar');
+            const improvement = improvementInput || (savedToday ? savedToday.improvement : 'Sin registrar');
+
+            const todayTasks = state.tasksByDate[state.selectedDate] || [];
+            const completedCount = todayTasks.filter(t => t.completed).length;
+
+            const text = [
+                `📋 *Evaluación Diaria (${state.selectedDate})*`,
+                `⭐ *Productividad:* ${rating}/5`,
+                `✅ *Tareas completadas:* ${completedCount}/${todayTasks.length}`,
+                `🏆 *Logro:* ${achievement}`,
+                `🎯 *Mejora:* ${improvement}`
+            ].join('\n');
+
+            openWhatsAppWithText(text);
+        }
+
+        function sendFullBackupToWhatsApp() {
+            const backupPayload = {
+                v: 2,
+                tasksByDate: state.tasksByDate,
+                evaluations: state.evaluations,
+                spotifyLists: state.spotifyLists,
+                presets: state.presets
+            };
+            const encodedJson = btoa(unescape(encodeURIComponent(JSON.stringify(backupPayload))));
+            const text = `🔄 *Respaldo Rutina Diaria (${getTodayStr()})*\nCopia todo este mensaje y pégalo en "Pegar código recibido de WhatsApp" en tu otro dispositivo:\n\nRUTINA_SYNC::${encodedJson}`;
+            openWhatsAppWithText(text);
+        }
+
+        function toggleImportBackupBox() {
+            document.getElementById('import-backup-box').classList.toggle('hidden');
+        }
+
+        function importBackupFromWhatsAppText() {
+            const rawText = document.getElementById('import-backup-textarea').value.trim();
+            const markerIndex = rawText.indexOf('RUTINA_SYNC::');
+            if (markerIndex === -1) {
+                showToast('No se encontró el código válido (RUTINA_SYNC::...) en el texto pegado.', 'warning');
+                return;
+            }
+            try {
+                const base64Part = rawText.slice(markerIndex + 'RUTINA_SYNC::'.length).trim().split(/\s+/)[0];
+                const decodedStr = decodeURIComponent(escape(atob(base64Part)));
+                const parsed = JSON.parse(decodedStr);
+
+                if (parsed.tasksByDate) {
+                    state.tasksByDate = parsed.tasksByDate;
+                    saveTasks();
+                }
+                if (parsed.evaluations) {
+                    state.evaluations = parsed.evaluations;
+                    localStorage.setItem(STORAGE_KEYS.EVALUATIONS, JSON.stringify(state.evaluations));
+                }
+                if (parsed.spotifyLists) {
+                    state.spotifyLists = parsed.spotifyLists;
+                    saveSpotifyState();
+                }
+                if (parsed.presets) {
+                    state.presets = parsed.presets;
+                    localStorage.setItem(STORAGE_KEYS.VIDEO_PRESETS, JSON.stringify(state.presets));
+                }
+
+                renderCalendar();
+                renderSpotifySwitcher();
+                updateEvaluationHistoryCount();
+                renderPresetSelector();
+                renderVideoQueueUI();
+                openEvaluationHistoryModal();
+                document.getElementById('import-backup-textarea').value = '';
+                document.getElementById('import-backup-box').classList.add('hidden');
+                showToast('¡Datos restaurados y sincronizados correctamente!', 'success');
+            } catch (err) {
+                showToast('Error al leer el código de respaldo. Verifica que lo copiaste completo.', 'warning');
+            }
+        }
+
+        function openEvaluationHistoryModal() {
+            const modal = document.getElementById('eval-history-modal');
+            const listEl = document.getElementById('eval-history-list');
+            const phoneInput = document.getElementById('whatsapp-phone-input');
+            if (phoneInput) phoneInput.value = state.whatsappSyncPhone || '';
+
+            if (state.evaluations.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-zinc-500 text-center py-8">Aún no hay evaluaciones registradas. Completa el formulario para guardar tu progreso.</p>`;
+            } else {
+                listEl.innerHTML = state.evaluations.map(ev => `
+                    <div class="p-3.5 rounded-xl bg-zinc-950/90 border border-zinc-800 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-indigo-400 capitalize">${formatSpanishDate(ev.date)}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-zinc-300">Tareas: ${ev.tasksSummary}</span>
+                                <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">${ev.rating}/5 ★</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-zinc-200"><strong class="text-zinc-400">Logro:</strong> ${ev.achievement}</p>
+                        <p class="text-xs text-zinc-300"><strong class="text-zinc-400">Mejora:</strong> ${ev.improvement}</p>
+                    </div>
+                `).join('');
+            }
+
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeEvaluationHistoryModal() {
+            document.getElementById('eval-history-modal').classList.add('hidden');
+        }
+
+        function exportEvaluationsCSV() {
+            if (state.evaluations.length === 0) {
+                showToast('No hay evaluaciones para exportar.', 'warning');
+                return;
+            }
+            const headers = ['Fecha', 'Hora', 'Calificacion', 'Tareas_Completadas', 'Logro_Principal', 'Mejora_Manana'];
+            const rows = state.evaluations.map(ev => [
+                ev.date,
+                ev.timestamp,
+                ev.rating,
+                ev.tasksSummary,
+                `"${ev.achievement.replace(/"/g, '""')}"`,
+                `"${ev.improvement.replace(/"/g, '""')}"`
+            ].join(','));
+
+            const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `Evaluacion_Rutina_${getTodayStr()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Historial exportado a CSV correctamente.', 'success');
+        }
+
+        // =========================================================================
+        // 7. YOUTUBE IFRAME API & AUTOMATIC SEQUENTIAL PLAYLIST ENGINE
+        // =========================================================================
+        function toggleAutoStartFirstTask() {
+            state.autoStartFirstTask = !state.autoStartFirstTask;
+            localStorage.setItem(STORAGE_KEYS.AUTO_FIRST_TASK, String(state.autoStartFirstTask));
+            renderAutoFirstTaskButton();
+            renderTasksForSelectedDate();
+            showToast(
+                state.autoStartFirstTask
+                    ? 'Auto-inicio activado: el Video 1 arrancará con tu primera tarea.'
+                    : 'Auto-inicio con la primera tarea desactivado.',
+                'info'
+            );
+        }
+
+        function renderAutoFirstTaskButton() {
+            const btn = document.getElementById('btn-auto-first-task');
+            const label = document.getElementById('auto-first-task-label');
+            if (!btn || !label) return;
+            if (state.autoStartFirstTask) {
+                btn.className = 'ml-1 px-2.5 py-1 rounded-xl border bg-emerald-500/15 border-emerald-500/40 text-emerald-300 text-[11px] font-medium flex items-center gap-1.5 transition';
+                label.textContent = 'Auto-inicio 1ª tarea: ON';
+            } else {
+                btn.className = 'ml-1 px-2.5 py-1 rounded-xl border bg-zinc-900 border-zinc-700 text-zinc-400 text-[11px] font-medium flex items-center gap-1.5 transition';
+                label.textContent = 'Auto-inicio 1ª tarea: OFF';
+            }
+        }
+
+        function loadYouTubeIframeAPI() {
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+
+        window.onYouTubeIframeAPIReady = function () {
+            const activeVideos = getActivePlaylistVideos();
+            const firstVideoId = activeVideos.length > 0 ? extractYouTubeId(activeVideos[0].url) : 'x20aA5oP3_k';
+
+            state.ytPlayer = new YT.Player('youtube-player-container', {
+                width: '100%',
+                height: '100%',
+                videoId: firstVideoId,
+                playerVars: {
+                    autoplay: state.pendingAutoplay ? 1 : 0,
+                    rel: 0,
+                    modestbranding: 1,
+                    playsinline: 1
+                },
+                events: {
+                    onReady: onPlayerReady,
+                    onStateChange: onPlayerStateChange,
+                    onError: onPlayerError
+                }
+            });
+        };
+
+        function onPlayerReady() {
+            state.ytReady = true;
+            renderVideoQueueUI();
+            if (state.pendingAutoplay) {
+                state.pendingAutoplay = false;
+                playVideoAtIndex(0, true);
+            }
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                enterVideoFullscreenMode(false);
+                if (state.ytPlayer && typeof state.ytPlayer.isMuted === 'function' && state.ytPlayer.isMuted()) {
+                    document.getElementById('unmute-helper-banner').classList.remove('hidden');
+                } else {
+                    document.getElementById('unmute-helper-banner').classList.add('hidden');
+                }
+            }
+
+            // YT.PlayerState.ENDED === 0 -> Automatically advance to next video
+            if (event.data === YT.PlayerState.ENDED) {
+                playNextVideo(true);
+            }
+        }
+
+        function onPlayerError() {
+            showToast('Este video no permite reproducción integrada, saltando al siguiente...', 'warning');
+            setTimeout(() => playNextVideo(true), 1200);
+        }
+
+        function unmuteYouTubePlayer() {
+            if (state.ytPlayer && typeof state.ytPlayer.unMute === 'function') {
+                state.ytPlayer.unMute();
+                state.ytPlayer.setVolume(100);
+                document.getElementById('unmute-helper-banner').classList.add('hidden');
+            }
+        }
+
+        function getActivePlaylistVideos() {
+            const preset = state.presets[state.activePresetId] || Object.values(state.presets)[0];
+            return preset ? preset.videos : [];
+        }
+
+        function renderPresetSelector() {
+            const select = document.getElementById('video-preset-select');
+            select.innerHTML = Object.values(state.presets).map(p =>
+                `<option value="${p.id}" ${p.id === state.activePresetId ? 'selected' : ''}>${p.name}</option>`
+            ).join('');
+
+            const dayBadge = document.getElementById('video-day-badge');
+            const preset = state.presets[state.activePresetId];
+            dayBadge.textContent = preset ? `Rutina activa: ${preset.name}` : 'Rutina personalizada';
+        }
+
+        function switchVideoPreset(presetId, autoplayFirst = true) {
+            if (!state.presets[presetId]) return;
+            state.activePresetId = presetId;
+            state.currentVideoIndex = 0;
+            renderPresetSelector();
+            renderVideoQueueUI();
+            if (autoplayFirst) {
+                playVideoAtIndex(0, true);
+            } else {
+                const videos = getActivePlaylistVideos();
+                if (state.ytReady && videos[0]) {
+                    const vid = extractYouTubeId(videos[0].url);
+                    if (vid) state.ytPlayer.cueVideoById(vid);
+                }
+            }
+        }
+
+        function onVideoPresetChange(newPresetId) {
+            switchVideoPreset(newPresetId, true);
+        }
+
+        function playVideoAtIndex(index, autoplay = true) {
+            const videos = getActivePlaylistVideos();
+            if (!videos.length) return;
+
+            state.currentVideoIndex = index % videos.length;
+            const target = videos[state.currentVideoIndex];
+            const videoId = extractYouTubeId(target.url);
+
+            renderVideoQueueUI();
+
+            if (autoplay) {
+                enterVideoFullscreenMode(true);
+            }
+
+            if (!state.ytReady || !state.ytPlayer) {
+                state.pendingAutoplay = autoplay;
+                return;
+            }
+
+            if (videoId) {
+                if (autoplay) {
+                    state.ytPlayer.loadVideoById(videoId);
+                    setTimeout(() => {
+                        if (state.ytPlayer && typeof state.ytPlayer.getPlayerState === 'function') {
+                            const pState = state.ytPlayer.getPlayerState();
+                            if (pState !== YT.PlayerState.PLAYING && pState !== YT.PlayerState.BUFFERING) {
+                                state.ytPlayer.mute();
+                                state.ytPlayer.playVideo();
+                                document.getElementById('unmute-helper-banner').classList.remove('hidden');
+                            }
+                        }
+                    }, 900);
+                } else {
+                    state.ytPlayer.cueVideoById(videoId);
+                }
+            }
+        }
+
+        function enterVideoFullscreenMode(tryNativeFullscreen = true) {
+            const panel = document.getElementById('video-workspace-panel');
+            const leftPanel = document.getElementById('left-productivity-panel');
+            if (!panel) return;
+
+            state.isVideoExpanded = true;
+            panel.classList.add('video-panel-fullscreen');
+            if (leftPanel) leftPanel.classList.add('hidden');
+            updateFullscreenButtonUI();
+
+            if (tryNativeFullscreen && !document.fullscreenElement && panel.requestFullscreen) {
+                panel.requestFullscreen().catch(() => {
+                    // Fallback to full-viewport Theater Mode (already active via .video-panel-fullscreen)
+                });
+            }
+        }
+
+        function exitVideoFullscreenMode() {
+            const panel = document.getElementById('video-workspace-panel');
+            const leftPanel = document.getElementById('left-productivity-panel');
+            if (!panel) return;
+
+            state.isVideoExpanded = false;
+            panel.classList.remove('video-panel-fullscreen');
+            if (leftPanel) leftPanel.classList.remove('hidden');
+            updateFullscreenButtonUI();
+
+            if (document.fullscreenElement && document.exitFullscreen) {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        function toggleVideoFullscreenMode() {
+            if (state.isVideoExpanded || document.fullscreenElement) {
+                exitVideoFullscreenMode();
+            } else {
+                enterVideoFullscreenMode(true);
+            }
+        }
+
+        function updateFullscreenButtonUI() {
+            const label = document.getElementById('video-fullscreen-label');
+            const icon = document.getElementById('video-fullscreen-icon');
+            if (!label || !icon) return;
+            if (state.isVideoExpanded) {
+                label.textContent = 'Salir (ESC)';
+                icon.setAttribute('data-lucide', 'minimize-2');
+            } else {
+                label.textContent = 'Pantalla Completa';
+                icon.setAttribute('data-lucide', 'maximize-2');
+            }
+            lucide.createIcons();
+        }
+
         // Sync state when user exits native browser fullscreen via ESC key or TV back button
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement && state.isVideoExpanded) {
@@ -176,7 +1886,144 @@
             document.body.removeChild(link);
             showToast(`Calendario exportado (${eventBlocks.length} alarmas). Ábrelo para sincronizar con tu dispositivo.`, 'success');
         }
-<!-- ... existing code ... -->
+
+        function playNextVideo(autoplay = true) {
+            const videos = getActivePlaylistVideos();
+            if (!videos.length) return;
+            const nextIdx = state.currentVideoIndex + 1;
+            if (nextIdx >= videos.length) {
+                showToast('Secuencia completada. Reiniciando desde el Video 1.', 'info');
+                playVideoAtIndex(0, autoplay);
+            } else {
+                playVideoAtIndex(nextIdx, autoplay);
+            }
+        }
+
+        function restartSequenceFromBeginning() {
+            playVideoAtIndex(0, true);
+        }
+
+        function renderVideoQueueUI() {
+            const videos = getActivePlaylistVideos();
+            const stepEl = document.getElementById('now-playing-step');
+            const titleEl = document.getElementById('now-playing-title');
+            const queueEl = document.getElementById('video-queue-list');
+
+            if (!videos.length) {
+                stepEl.textContent = 'Sin videos';
+                titleEl.textContent = 'Agrega enlaces de YouTube usando "Editar Lista"';
+                queueEl.innerHTML = '';
+                return;
+            }
+
+            const current = videos[state.currentVideoIndex] || videos[0];
+            stepEl.textContent = `Video ${state.currentVideoIndex + 1} de ${videos.length} • Reproducción secuencial`;
+            titleEl.textContent = current.title;
+
+            queueEl.innerHTML = videos.map((vid, idx) => {
+                const isActive = idx === state.currentVideoIndex;
+                return `
+                    <button onclick="playVideoAtIndex(${idx}, true)" class="text-left p-2.5 rounded-xl border transition flex items-start gap-2.5 ${
+                        isActive
+                            ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-sm'
+                            : 'bg-zinc-950/80 border-zinc-800/90 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                    }">
+                        <span class="w-5 h-5 rounded-lg text-[11px] font-bold flex items-center justify-center shrink-0 ${
+                            isActive ? 'bg-indigo-600 text-white' : 'bg-zinc-800 text-zinc-400'
+                        }">${idx + 1}</span>
+                        <span class="text-xs font-medium line-clamp-2 leading-snug">${vid.title}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        // Edit Video Playlist Modal Functions
+        function openEditPlaylistModal() {
+            const preset = state.presets[state.activePresetId];
+            if (!preset) return;
+
+            document.getElementById('edit-playlist-subtitle').textContent = `Lista: ${preset.name}`;
+            const container = document.getElementById('edit-playlist-inputs');
+            container.innerHTML = preset.videos.map((v, i) => createPlaylistSlotHTML(i, v.title, v.url)).join('');
+
+            document.getElementById('edit-playlist-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function createPlaylistSlotHTML(index, title = '', url = '') {
+            return `
+                <div class="playlist-slot-row p-3 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-indigo-400">Video #${index + 1}</span>
+                        <button type="button" onclick="this.closest('.playlist-slot-row').remove()" class="text-xs text-zinc-500 hover:text-rose-400">Quitar</button>
+                    </div>
+                    <input type="text" class="slot-title w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500" placeholder="Título del video" value="${title.replace(/"/g, '&quot;')}">
+                    <input type="text" class="slot-url w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 placeholder-zinc-500" placeholder="URL de YouTube (https://www.youtube.com/watch?v=...)" value="${url.replace(/"/g, '&quot;')}">
+                </div>
+            `;
+        }
+
+        function addPlaylistSlotInput() {
+            const container = document.getElementById('edit-playlist-inputs');
+            const count = container.querySelectorAll('.playlist-slot-row').length;
+            container.insertAdjacentHTML('beforeend', createPlaylistSlotHTML(count, `Video ${count + 1}`, ''));
+        }
+
+        function closeEditPlaylistModal() {
+            document.getElementById('edit-playlist-modal').classList.add('hidden');
+        }
+
+        function savePlaylistEdits() {
+            const rows = document.querySelectorAll('#edit-playlist-inputs .playlist-slot-row');
+            const updatedVideos = [];
+
+            rows.forEach((row, idx) => {
+                const title = row.querySelector('.slot-title').value.trim() || `Video ${idx + 1}`;
+                const url = row.querySelector('.slot-url').value.trim();
+                if (url && extractYouTubeId(url)) {
+                    updatedVideos.push({ title, url });
+                }
+            });
+
+            if (updatedVideos.length === 0) {
+                showToast('Agrega al menos un enlace válido de YouTube.', 'warning');
+                return;
+            }
+
+            state.presets[state.activePresetId].videos = updatedVideos;
+            localStorage.setItem(STORAGE_KEYS.VIDEO_PRESETS, JSON.stringify(state.presets));
+
+            closeEditPlaylistModal();
+            playVideoAtIndex(0, true);
+            showToast('Lista de videos actualizada y guardada.', 'success');
+        }
+
+        // =========================================================================
+        // 9. INITIALIZATION ON WINDOW LOAD
+        // =========================================================================
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+
+            // Initialize Calendar & Seed Sample Tasks if First Visit
+            seedInitialTasksIfEmpty();
+            renderCalendar();
+
+            // Initialize Saved Spotify Playlists Switcher
+            renderSpotifySwitcher();
+
+            // Initialize Daily Evaluation Rating UI & History Counter
+            selectEvalRating(5);
+            updateEvaluationHistoryCount();
+
+            // Select Video Routine Matching Today's Day of Week
+            state.activePresetId = getPresetIdForDate(getTodayStr());
+            renderAutoFirstTaskButton();
+            renderPresetSelector();
+            renderVideoQueueUI();
+
+            // Load YouTube Player API
+            loadYouTubeIframeAPI();
+
             // Start realtime clock & alarm monitor
             updateClockAndAlarms();
             setInterval(updateClockAndAlarms, 1000);
