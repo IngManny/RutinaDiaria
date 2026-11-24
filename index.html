@@ -157,6 +157,10 @@
                     </div>
                     <input type="text" id="task-text-input" placeholder="Ej. Estiramiento matutino..." required
                            class="flex-1 min-w-[130px] bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500">
+                    <select id="task-video-preset-select" title="Lista de videos a reproducir al iniciar esta tarea"
+                            class="bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-emerald-300 focus:outline-none focus:border-emerald-500 cursor-pointer shrink-0 max-w-[165px] truncate">
+                        <option value="">Sin video (solo alarma)</option>
+                    </select>
                     <select id="task-repeat-select" title="Frecuencia de repetición"
                             class="bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 cursor-pointer shrink-0">
                         <option value="once">Solo este día</option>
@@ -338,28 +342,38 @@
                     </div>
                 </div>
 
-                <!-- Auto-Advance Toggle, Quick Preset Selector & Queue Drawer Button -->
-                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <!-- Auto-Start on First Task Toggle, Auto-Advance Toggle, Quick Preset Selector & Queue Drawer Button -->
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">
                     <!-- Quick Preset Selector -->
                     <div class="relative hidden sm:block">
                         <select id="quick-preset-select" onchange="selectPresetManually(this.value)" title="Cambiar lista predeterminada"
-                                class="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs font-medium rounded-xl px-2.5 py-1.5 pr-7 focus:outline-none focus:border-indigo-500 cursor-pointer max-w-[155px] truncate">
+                                class="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs font-medium rounded-xl px-2.5 py-1.5 pr-7 focus:outline-none focus:border-indigo-500 cursor-pointer max-w-[145px] truncate">
                             <!-- Populated via JS -->
                         </select>
                     </div>
 
+                    <!-- Auto-start with 1st Task Switch -->
+                    <label class="flex items-center gap-1.5 cursor-pointer bg-zinc-900 border border-zinc-800 px-2.5 py-1.5 rounded-xl select-none" title="Iniciar automáticamente desde el Video 1 cuando comience la primera tarea del día">
+                        <span class="text-[11px] sm:text-xs font-medium text-indigo-300">Auto-inicio 1ª tarea</span>
+                        <div class="relative">
+                            <input type="checkbox" id="auto-start-first-task-toggle" checked onchange="toggleAutoStartFirstTask(this.checked)" class="sr-only peer">
+                            <div class="w-7 h-4 bg-zinc-700 rounded-full peer peer-checked:bg-indigo-500 transition-colors"></div>
+                            <div class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-3"></div>
+                        </div>
+                    </label>
+
                     <!-- Auto-advance Switch -->
-                    <label class="flex items-center gap-2 cursor-pointer bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl select-none">
-                        <span class="text-xs font-medium text-zinc-300">Auto-siguiente</span>
+                    <label class="flex items-center gap-1.5 cursor-pointer bg-zinc-900 border border-zinc-800 px-2.5 py-1.5 rounded-xl select-none" title="Avanzar automáticamente al siguiente video al terminar">
+                        <span class="text-[11px] sm:text-xs font-medium text-zinc-300">Auto-siguiente</span>
                         <div class="relative">
                             <input type="checkbox" id="auto-advance-toggle" checked onchange="toggleAutoAdvance(this.checked)" class="sr-only peer">
-                            <div class="w-8 h-4 bg-zinc-700 rounded-full peer peer-checked:bg-emerald-500 transition-colors"></div>
-                            <div class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+                            <div class="w-7 h-4 bg-zinc-700 rounded-full peer peer-checked:bg-emerald-500 transition-colors"></div>
+                            <div class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-3"></div>
                         </div>
                     </label>
 
                     <!-- Open Playlist / Add Videos Drawer -->
-                    <button onclick="toggleQueueDrawer()" class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold flex items-center gap-1.5 transition border border-zinc-700/70">
+                    <button onclick="toggleQueueDrawer()" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold flex items-center gap-1.5 transition border border-zinc-700/70">
                         <i data-lucide="list-video" class="w-4 h-4 text-emerald-400"></i>
                         <span>Lista (<span id="queue-count">4</span>)</span>
                     </button>
@@ -372,6 +386,17 @@
                 <!-- Dynamic Player Container (YouTube API / Instagram / Facebook / MP4) -->
                 <div id="video-stage" class="video-wrapper w-full h-full flex items-center justify-center">
                     <!-- Player injected here -->
+                </div>
+
+                <!-- Unmute Helper Banner (shown if browser muted autoplay on 1st task trigger) -->
+                <div id="unmute-video-helper" class="hidden absolute bottom-3 left-3 right-3 bg-indigo-950/95 backdrop-blur-md border border-indigo-500/60 rounded-xl p-2.5 flex items-center justify-between gap-2 z-20 shadow-lg">
+                    <div class="flex items-center gap-2 text-xs text-indigo-100">
+                        <i data-lucide="volume-x" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                        <span>Rutina iniciada automáticamente con la 1ª tarea (silenciada por el navegador).</span>
+                    </div>
+                    <button type="button" onclick="unmuteCurrentVideo()" class="px-3 py-1 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold shrink-0 transition">
+                        Activar Sonido
+                    </button>
                 </div>
 
                 <!-- Overlay Banner for Instagram / Facebook Reels (Timer + External Fallback) -->
@@ -761,6 +786,7 @@
             DAY_SCHEDULE: 'rutina_pwa_day_schedule_v2',
             ACTIVE_PRESET: 'rutina_pwa_active_preset_v2',
             AUTO_SWITCH_DAY: 'rutina_pwa_auto_switch_day_v2',
+            AUTO_START_FIRST_TASK: 'rutina_pwa_auto_start_first_task_v1',
             SPOTIFY: 'rutina_pwa_spotify_v1',
             SPOTIFY_LIST: 'rutina_pwa_spotify_list_v1',
             SURVEYS: 'rutina_pwa_daily_surveys_v1',
@@ -862,6 +888,7 @@
         ];
 
         const savedAutoSwitch = localStorage.getItem(STORAGE_KEYS.AUTO_SWITCH_DAY);
+        const savedAutoStartFirstTask = localStorage.getItem(STORAGE_KEYS.AUTO_START_FIRST_TASK);
         const savedAlarmMuted = localStorage.getItem(STORAGE_KEYS.ALARM_MUTED);
 
         const DEFAULT_SPOTIFY_ITEMS = [
@@ -880,7 +907,6 @@
         function loadInitialSpotifyItems() {
             const storedList = JSON.parse(localStorage.getItem(STORAGE_KEYS.SPOTIFY_LIST));
             if (Array.isArray(storedList) && storedList.length > 0) {
-                // Ensure both default items are present if not already added
                 DEFAULT_SPOTIFY_ITEMS.forEach(defItem => {
                     const exists = storedList.some(item => item.url && item.url.split('?')[0] === defItem.url.split('?')[0]);
                     if (!exists) {
@@ -910,6 +936,7 @@
             daySchedule: JSON.parse(localStorage.getItem(STORAGE_KEYS.DAY_SCHEDULE)) || DEFAULT_DAY_SCHEDULE,
             activePresetId: localStorage.getItem(STORAGE_KEYS.ACTIVE_PRESET) || 'preset_lmv',
             autoSwitchByDay: savedAutoSwitch === null ? true : savedAutoSwitch === 'true',
+            autoStartWithFirstTask: savedAutoStartFirstTask === null ? true : savedAutoStartFirstTask === 'true',
             currentVideoIndex: 0,
             autoAdvance: true,
             spotifyItems: initialSpotifyItems,
@@ -926,7 +953,7 @@
             state.activePresetId = keys.length > 0 ? keys[0] : null;
         }
 
-        let presetFormMode = 'create'; // 'create' or 'rename'
+        let presetFormMode = 'create';
         let ytPlayer = null;
         let ytApiReady = false;
         let socialReelTimer = null;
@@ -949,9 +976,9 @@
         // Seed initial sample tasks for today if empty
         if (!state.tasksByDate[state.selectedDate]) {
             state.tasksByDate[state.selectedDate] = [
-                { id: 't1', startTime: '07:00', endTime: '07:30', text: 'Hidratación + Estiramiento matutino', completed: true },
-                { id: 't2', startTime: '07:30', endTime: '08:15', text: 'Bloque de ejercicio con videos guiados', completed: false },
-                { id: 't3', startTime: '08:30', endTime: '10:00', text: 'Trabajo profundo con playlist de Spotify', completed: false }
+                { id: 't1', startTime: '07:00', endTime: '07:30', text: 'Hidratación + Estiramiento matutino', completed: true, videoPresetId: '' },
+                { id: 't2', startTime: '07:30', endTime: '08:15', text: 'Bloque de ejercicio con videos guiados', completed: false, videoPresetId: 'preset_lmv' },
+                { id: 't3', startTime: '08:30', endTime: '10:00', text: 'Trabajo profundo con playlist de Spotify', completed: false, videoPresetId: '' }
             ];
             saveTasks();
         }
@@ -1090,7 +1117,6 @@
             const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
             const todayISO = getTodayISO();
 
-            // Render 7 days centered on selectedDate (-3 to +3)
             for (let offset = -3; offset <= 3; offset++) {
                 const current = new Date(baseDate);
                 current.setDate(baseDate.getDate() + offset);
@@ -1133,7 +1159,7 @@
 
         function renderTasksForSelectedDate() {
             const list = document.getElementById('daily-tasks-list');
-            const tasks = (state.tasksByDate[state.selectedDate] || []).sort((a, b) =>
+            const tasks = [...(state.tasksByDate[state.selectedDate] || [])].sort((a, b) =>
                 (a.startTime || '00:00').localeCompare(b.startTime || '00:00')
             );
 
@@ -1141,24 +1167,30 @@
                 list.innerHTML = `
                     <div class="h-full flex flex-col items-center justify-center text-center py-4 text-zinc-500">
                         <p class="text-xs">No hay actividades programadas para este día.</p>
-                        <p class="text-[11px] text-zinc-600 mt-0.5">Define hora de inicio, hora de fin y agrega tu bloque arriba.</p>
                     </div>
                 `;
                 return;
             }
 
+            const isViewingToday = state.selectedDate === getTodayISO();
             const now = new Date();
-            const todayISO = getTodayISO();
             const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            const isViewingToday = state.selectedDate === todayISO;
 
             list.innerHTML = tasks.map(task => {
                 const start = task.startTime || '08:00';
                 const end = task.endTime || addMinutesToTimeStr(start, 30);
                 const isCurrentlyActive = isViewingToday && !task.completed && currentHHMM >= start && currentHHMM < end;
+                const linkedPreset = task.videoPresetId && state.presets[task.videoPresetId] ? state.presets[task.videoPresetId] : null;
 
                 // Inline edit mode for this specific task
                 if (state.editingTaskId === task.id) {
+                    const presetOptionsHtml = [
+                        `<option value="">Sin video (solo alarma)</option>`,
+                        ...Object.values(state.presets).map(p =>
+                            `<option value="${p.id}" ${p.id === task.videoPresetId ? 'selected' : ''}>▶ ${escapeHTML(p.name)}</option>`
+                        )
+                    ].join('');
+
                     return `
                     <form onsubmit="saveEditedTask(event, '${task.id}')" class="p-2 rounded-xl bg-zinc-950 border-2 border-indigo-500/70 space-y-2 shadow-lg">
                         <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5">
@@ -1172,6 +1204,10 @@
                             </div>
                             <input type="text" id="edit-text-${task.id}" value="${escapeHTML(task.text)}" required
                                    class="flex-1 min-w-[120px] bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-indigo-400">
+                            <select id="edit-preset-${task.id}" title="Lista de videos vinculada a este horario"
+                                    class="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-emerald-300 focus:outline-none focus:border-emerald-500 max-w-[160px] truncate">
+                                ${presetOptionsHtml}
+                            </select>
                         </div>
                         <div class="flex items-center justify-end gap-1.5">
                             <button type="button" onclick="cancelEditingTask()"
@@ -1215,6 +1251,7 @@
                         <span class="text-xs truncate ${task.completed ? 'line-through text-zinc-500' : 'text-zinc-200'}">
                             ${escapeHTML(task.text)}
                         </span>
+                        ${linkedPreset ? `<span class="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shrink-0 max-w-[130px] truncate" title="Video automático: ${escapeHTML(linkedPreset.name)}"><i data-lucide="play" class="w-2.5 h-2.5 shrink-0"></i><span class="truncate">${escapeHTML(linkedPreset.name)}</span></span>` : ''}
                     </button>
                     <div class="flex items-center gap-0.5 shrink-0">
                         <button type="button" onclick="repeatTaskWeekdays('${task.id}')" title="Repetir esta tarea de Lunes a Viernes (próximas 4 semanas)"
@@ -1254,11 +1291,13 @@
             const startInput = document.getElementById(`edit-start-${taskId}`);
             const endInput = document.getElementById(`edit-end-${taskId}`);
             const textInput = document.getElementById(`edit-text-${taskId}`);
+            const presetInput = document.getElementById(`edit-preset-${taskId}`);
             if (!startInput || !endInput || !textInput) return;
 
             const newStart = startInput.value;
             const newEnd = endInput.value;
             const newText = textInput.value.trim();
+            const newPresetId = presetInput ? presetInput.value : '';
 
             if (!newText) return;
             if (newEnd <= newStart) {
@@ -1272,6 +1311,7 @@
                 task.startTime = newStart;
                 task.endTime = newEnd;
                 task.text = newText;
+                task.videoPresetId = newPresetId;
                 saveTasks();
                 showToast('Tarea actualizada');
             }
@@ -1399,12 +1439,14 @@
             const startInput = document.getElementById('task-start-input');
             const endInput = document.getElementById('task-end-input');
             const textInput = document.getElementById('task-text-input');
+            const videoPresetSelect = document.getElementById('task-video-preset-select');
             const repeatSelect = document.getElementById('task-repeat-select');
             const text = textInput.value.trim();
             if (!text) return;
 
             const startTime = startInput.value || '08:00';
             let endTime = endInput.value || addMinutesToTimeStr(startTime, 30);
+            const videoPresetId = videoPresetSelect ? videoPresetSelect.value : '';
             const repeatMode = repeatSelect ? repeatSelect.value : 'once';
 
             if (endTime <= startTime) {
@@ -1417,6 +1459,7 @@
                 startTime,
                 endTime,
                 text,
+                videoPresetId,
                 repeatMode
             });
 
@@ -1437,7 +1480,7 @@
             }
         }
 
-        function scheduleTaskAcrossDays({ baseIsoDate, startTime, endTime, text, repeatMode }) {
+        function scheduleTaskAcrossDays({ baseIsoDate, startTime, endTime, text, videoPresetId = '', repeatMode }) {
             const [y, m, d] = baseIsoDate.split('-').map(Number);
             const baseDate = new Date(y, m - 1, d);
             const totalDaysToScan = repeatMode === 'once' ? 1 : 28; // 4 weeks ahead
@@ -1473,6 +1516,7 @@
                         startTime,
                         endTime,
                         text,
+                        videoPresetId,
                         completed: false
                     });
                     createdCount++;
@@ -1491,6 +1535,7 @@
                 startTime: sourceTask.startTime,
                 endTime: sourceTask.endTime,
                 text: sourceTask.text,
+                videoPresetId: sourceTask.videoPresetId || '',
                 repeatMode: 'weekdays'
             });
 
@@ -1550,7 +1595,7 @@
         }
 
         /* =====================================================================
-           4A. AUTOMATED TASK START & END ALARM ENGINE (Web Audio + Notifications)
+           4A. AUTOMATED TASK START & END ALARM ENGINE + 1ST TASK VIDEO TRIGGER
            ===================================================================== */
         function unlockAudioContext() {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -1608,10 +1653,9 @@
 
             try {
                 const now = ctx.currentTime;
-                // Ascending energetic triad for 'start'; warm resolving cadence for 'end'
                 const notes = type === 'start'
-                    ? [523.25, 659.25, 783.99, 1046.50] // C5 - E5 - G5 - C6
-                    : [783.99, 659.25, 587.33, 523.25]; // G5 - E5 - D5 - C5
+                    ? [523.25, 659.25, 783.99, 1046.50]
+                    : [783.99, 659.25, 587.33, 523.25];
 
                 notes.forEach((freq, idx) => {
                     const osc = ctx.createOscillator();
@@ -1629,9 +1673,7 @@
                     osc.start(now + idx * 0.16);
                     osc.stop(now + idx * 0.16 + 0.45);
                 });
-            } catch (err) {
-                // Ignore audio errors if browser blocks autoplay prior to user gesture
-            }
+            } catch (err) {}
         }
 
         function sendSystemNotification(title, body) {
@@ -1715,6 +1757,52 @@
             sendSystemNotification('Prueba de Alarma - Rutina Diaria', 'El sonido y las notificaciones visuales están funcionando.');
         }
 
+        function triggerVideoRoutineStartForFirstTask(task) {
+            const todayISO = getTodayISO();
+            const todayDow = getDayOfWeekFromISO(todayISO);
+            if (state.autoSwitchByDay) {
+                const assignedId = state.daySchedule[todayDow];
+                if (assignedId && state.presets[assignedId]) {
+                    state.activePresetId = assignedId;
+                    localStorage.setItem(STORAGE_KEYS.ACTIVE_PRESET, assignedId);
+                }
+            }
+
+            state.currentVideoIndex = 0;
+            updatePresetSelectorsUI();
+            loadCurrentVideo(true);
+
+            // Show unmute helper if browser autoplay policy requires user gesture for audio
+            setTimeout(() => {
+                if (ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+                    const playerState = ytPlayer.getPlayerState();
+                    if (playerState !== 1 && typeof ytPlayer.mute === 'function') {
+                        ytPlayer.mute();
+                        ytPlayer.playVideo();
+                        const helper = document.getElementById('unmute-video-helper');
+                        if (helper) helper.classList.remove('hidden');
+                    }
+                }
+            }, 900);
+
+            showToast(`Video 1 iniciado automáticamente con "${task.text}"`);
+        }
+
+        function unmuteCurrentVideo() {
+            if (ytPlayer && typeof ytPlayer.unMute === 'function') {
+                ytPlayer.unMute();
+                ytPlayer.setVolume(100);
+                ytPlayer.playVideo();
+            }
+            const mp4El = document.getElementById('native-mp4-player');
+            if (mp4El) {
+                mp4El.muted = false;
+                mp4El.play().catch(() => {});
+            }
+            const helper = document.getElementById('unmute-video-helper');
+            if (helper) helper.classList.add('hidden');
+        }
+
         function checkScheduledTaskAlarms() {
             const now = new Date();
             const hh = String(now.getHours()).padStart(2, '0');
@@ -1722,31 +1810,42 @@
             const ss = String(now.getSeconds()).padStart(2, '0');
             const currentHHMM = `${hh}:${mm}`;
 
-            // Update live digital clock in Calendar header
             const clockEl = document.getElementById('live-clock-display');
             if (clockEl) {
                 clockEl.textContent = `Hora actual: ${hh}:${mm}:${ss}`;
             }
 
-            // Refresh active task highlight on minute boundary (only if not currently editing a task)
             if (ss === '00' && state.selectedDate === getTodayISO() && !state.editingTaskId) {
                 renderTasksForSelectedDate();
             }
 
             const todayISO = getTodayISO();
-            const todayTasks = state.tasksByDate[todayISO] || [];
+            const todayTasks = [...(state.tasksByDate[todayISO] || [])].sort((a, b) =>
+                (a.startTime || '00:00').localeCompare(b.startTime || '00:00')
+            );
+            const firstTaskOfDay = todayTasks.length > 0 ? todayTasks[0] : null;
             let triggeredUpdated = false;
 
             todayTasks.forEach(task => {
                 const start = task.startTime || task.time;
                 const end = task.endTime;
 
-                // 1. Check Start Time Alarm
+                // 1. Check Start Time Alarm & Linked Video Playlist Automation
                 if (start && currentHHMM === start && !task.completed) {
                     const startEventKey = `${todayISO}_${task.id}_start_${start}`;
                     if (!state.triggeredAlarms[startEventKey]) {
                         state.triggeredAlarms[startEventKey] = true;
                         triggeredUpdated = true;
+
+                        let videoSubtitleNote = '';
+                        if (task.videoPresetId && state.presets[task.videoPresetId]) {
+                            state.activePresetId = task.videoPresetId;
+                            state.currentVideoIndex = 0;
+                            savePresetsAndSchedule();
+                            updatePresetSelectorsUI();
+                            loadCurrentVideo();
+                            videoSubtitleNote = ` • Iniciando videos: "${state.presets[task.videoPresetId].name}"`;
+                        }
 
                         playAlarmChime('start');
                         showAlarmBanner({
@@ -1754,9 +1853,9 @@
                             taskId: task.id,
                             taskTitle: task.text,
                             startTime: start,
-                            endTime: end || ''
+                            endTime: `${end || ''}${videoSubtitleNote}`
                         });
-                        sendSystemNotification(`Inicio de tarea (${start})`, task.text);
+                        sendSystemNotification(`Inicio de tarea (${start})`, `${task.text}${videoSubtitleNote}`);
                     }
                 }
 
@@ -1798,7 +1897,6 @@
             const [y, m, d] = todayISO.split('-').map(Number);
             let cursor = new Date(y, m - 1, d);
 
-            // If today is not marked 'yes' yet, check starting from yesterday so active streak stays visible
             const todayEntry = state.surveysByDate[todayISO];
             if (!todayEntry || todayEntry.status !== 'yes') {
                 cursor.setDate(cursor.getDate() - 1);
@@ -2061,6 +2159,7 @@
                 daySchedule: state.daySchedule,
                 activePresetId: state.activePresetId,
                 autoSwitchByDay: state.autoSwitchByDay,
+                autoStartWithFirstTask: state.autoStartWithFirstTask,
                 spotifyItems: state.spotifyItems,
                 spotifyPlaylistUrl: state.spotifyPlaylistUrl
             };
@@ -2079,6 +2178,9 @@
             if (typeof data.autoSwitchByDay === 'boolean') {
                 state.autoSwitchByDay = data.autoSwitchByDay;
             }
+            if (typeof data.autoStartWithFirstTask === 'boolean') {
+                state.autoStartWithFirstTask = data.autoStartWithFirstTask;
+            }
             if (Array.isArray(data.spotifyItems) && data.spotifyItems.length > 0) {
                 state.spotifyItems = data.spotifyItems;
                 localStorage.setItem(STORAGE_KEYS.SPOTIFY_LIST, JSON.stringify(state.spotifyItems));
@@ -2090,6 +2192,7 @@
             saveTasks();
             saveSurveys();
             savePresetsAndSchedule();
+            updateAutoStartFirstTaskUI();
             renderSpotifySelector();
             applySpotifyPlaylist(state.spotifyPlaylistUrl);
             renderCalendar();
@@ -2296,6 +2399,22 @@
             localStorage.setItem(STORAGE_KEYS.AUTO_SWITCH_DAY, String(state.autoSwitchByDay));
         }
 
+        function updateAutoStartFirstTaskUI() {
+            const toggle = document.getElementById('auto-start-first-task-toggle');
+            if (toggle) toggle.checked = state.autoStartWithFirstTask;
+        }
+
+        function toggleAutoStartFirstTask(enabled) {
+            state.autoStartWithFirstTask = enabled;
+            localStorage.setItem(STORAGE_KEYS.AUTO_START_FIRST_TASK, String(enabled));
+            renderTasksForSelectedDate();
+            showToast(
+                enabled
+                    ? 'El video iniciará automáticamente con la 1ª tarea del día'
+                    : 'Inicio automático con la 1ª tarea desactivado'
+            );
+        }
+
         function getActivePreset() {
             return state.presets[state.activePresetId] || null;
         }
@@ -2325,6 +2444,18 @@
 
             const drawerSelect = document.getElementById('drawer-preset-select');
             if (drawerSelect) drawerSelect.innerHTML = optionsHtml;
+
+            const taskPresetSelect = document.getElementById('task-video-preset-select');
+            if (taskPresetSelect) {
+                const prevVal = taskPresetSelect.value;
+                taskPresetSelect.innerHTML = [
+                    `<option value="">Sin video (solo alarma)</option>`,
+                    ...presetList.map(p => `<option value="${p.id}">▶ ${escapeHTML(p.name)}</option>`)
+                ].join('');
+                if (prevVal && state.presets[prevVal]) {
+                    taskPresetSelect.value = prevVal;
+                }
+            }
 
             const autoDayToggle = document.getElementById('auto-switch-by-day-toggle');
             if (autoDayToggle) autoDayToggle.checked = state.autoSwitchByDay;
@@ -2435,7 +2566,6 @@
             state.activePresetId = remainingKeys[0];
             state.currentVideoIndex = 0;
 
-            // Reassign any day that pointed to deletedId
             Object.keys(state.daySchedule).forEach(dayKey => {
                 if (state.daySchedule[dayKey] === deletedId) {
                     state.daySchedule[dayKey] = state.activePresetId;
@@ -2644,8 +2774,11 @@
             loadCurrentVideo();
         };
 
-        function loadCurrentVideo() {
+        function loadCurrentVideo(forcePlay = false) {
             clearSocialReelTimer();
+            const unmuteHelper = document.getElementById('unmute-video-helper');
+            if (unmuteHelper) unmuteHelper.classList.add('hidden');
+
             const videos = getActiveVideos();
             const stage = document.getElementById('video-stage');
             const titleEl = document.getElementById('current-video-title');
@@ -2693,6 +2826,11 @@
                             playsinline: 1
                         },
                         events: {
+                            onReady: (event) => {
+                                if (forcePlay) {
+                                    event.target.playVideo();
+                                }
+                            },
                             onStateChange: (event) => {
                                 if (event.data === YT.PlayerState.ENDED && state.autoAdvance) {
                                     playNextVideo();
@@ -2724,6 +2862,13 @@
                 `;
                 const vidEl = document.getElementById('native-mp4-player');
                 if (vidEl) {
+                    if (forcePlay) {
+                        vidEl.play().catch(() => {
+                            vidEl.muted = true;
+                            vidEl.play().catch(() => {});
+                            if (unmuteHelper) unmuteHelper.classList.remove('hidden');
+                        });
+                    }
                     vidEl.onended = () => {
                         if (state.autoAdvance) playNextVideo();
                     };
@@ -2737,6 +2882,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             updateAlarmSoundButtonUI();
+            updateAutoStartFirstTaskUI();
             renderCalendar();
             saveSpotifyItemsList();
             renderSpotifySelector();
@@ -2767,7 +2913,6 @@
                 ytApiReady = true;
                 loadCurrentVideo();
             } else {
-                // Fallback timer in case offline or YT script delayed
                 setTimeout(() => {
                     if (!ytPlayer && getActiveVideos().length > 0) {
                         loadCurrentVideo();
