@@ -150,14 +150,8 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Quick Week Strip (7 days around selected date) -->
-                <div id="week-strip" class="grid grid-cols-7 gap-1 py-2 shrink-0">
-                    <!-- Populated via JS -->
-                </div>
-
-                <!-- Add Task Input Row (Start Time + End Time + Title) -->
-                <form onsubmit="addDailyTask(event)" class="flex flex-wrap sm:flex-nowrap items-center gap-1.5 mb-2 shrink-0">
+                <!-- Add Task Input Row (Start Time + End Time + Title + Repeat Rule) -->
+                <form onsubmit="addDailyTask(event)" class="flex flex-wrap items-center gap-1.5 mb-2 shrink-0">
                     <div class="flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 shrink-0" title="Hora de inicio y hora de fin">
                         <span class="text-[10px] text-zinc-500 font-medium">De</span>
                         <input type="time" id="task-start-input" value="07:30" required aria-label="Hora de inicio"
@@ -168,6 +162,12 @@
                     </div>
                     <input type="text" id="task-text-input" placeholder="Ej. Estiramiento matutino..." required
                            class="flex-1 min-w-[130px] bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500">
+                    <select id="task-repeat-select" title="Frecuencia de repetición"
+                            class="bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 cursor-pointer shrink-0">
+                        <option value="once">Solo este día</option>
+                        <option value="weekdays">Lun - Vie (4 sem)</option>
+                        <option value="daily">Todos los días (4 sem)</option>
+                    </select>
                     <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-1 transition shrink-0">
                         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                         <span>Agregar</span>
@@ -1178,6 +1178,10 @@
                         </span>
                     </button>
                     <div class="flex items-center gap-0.5 shrink-0">
+                        <button type="button" onclick="repeatTaskWeekdays('${task.id}')" title="Repetir esta tarea de Lunes a Viernes (próximas 4 semanas)"
+                                class="opacity-80 sm:opacity-0 group-hover:opacity-100 p-1 rounded-lg text-zinc-400 hover:text-emerald-300 hover:bg-zinc-900 transition">
+                            <i data-lucide="repeat" class="w-3.5 h-3.5"></i>
+                        </button>
                         <button type="button" onclick="startEditingTask('${task.id}')" title="Editar tarea y horario"
                                 class="opacity-80 sm:opacity-0 group-hover:opacity-100 p-1 rounded-lg text-zinc-400 hover:text-indigo-300 hover:bg-zinc-900 transition">
                             <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
@@ -1356,16 +1360,109 @@
             const startInput = document.getElementById('task-start-input');
             const endInput = document.getElementById('task-end-input');
             const textInput = document.getElementById('task-text-input');
+            const repeatSelect = document.getElementById('task-repeat-select');
             const text = textInput.value.trim();
             if (!text) return;
 
             const startTime = startInput.value || '08:00';
             let endTime = endInput.value || addMinutesToTimeStr(startTime, 30);
+            const repeatMode = repeatSelect ? repeatSelect.value : 'once';
 
             if (endTime <= startTime) {
                 showToast('La hora de fin debe ser posterior a la hora de inicio');
                 return;
             }
+
+            const createdCount = scheduleTaskAcrossDays({
+                baseIsoDate: state.selectedDate,
+                startTime,
+                endTime,
+                text,
+                repeatMode
+            });
+
+            // Advance suggested next start/end block for convenience
+            startInput.value = endTime;
+            endInput.value = addMinutesToTimeStr(endTime, 30);
+            textInput.value = '';
+
+            saveTasks();
+            renderCalendar();
+
+            if (repeatMode === 'weekdays') {
+                showToast(`Programada de Lun a Vie (${createdCount} días hábiles)`);
+            } else if (repeatMode === 'daily') {
+                showToast(`Programada todos los días (${createdCount} días)`);
+            } else {
+                showToast(`Actividad agregada (${startTime} - ${endTime})`);
+            }
+        }
+
+        function scheduleTaskAcrossDays({ baseIsoDate, startTime, endTime, text, repeatMode }) {
+            const [y, m, d] = baseIsoDate.split('-').map(Number);
+            const baseDate = new Date(y, m - 1, d);
+            const totalDaysToScan = repeatMode === 'once' ? 1 : 28; // 4 weeks ahead
+            let createdCount = 0;
+
+            for (let offset = 0; offset < totalDaysToScan; offset++) {
+                const targetDate = new Date(baseDate);
+                targetDate.setDate(baseDate.getDate() + offset);
+                const dow = targetDate.getDay(); // 0 = Sun, 1 = Mon ... 5 = Fri, 6 = Sat
+
+                if (repeatMode === 'weekdays' && (dow === 0 || dow === 6)) {
+                    continue; // Skip Saturday and Sunday
+                }
+
+                const iso = [
+                    targetDate.getFullYear(),
+                    String(targetDate.getMonth() + 1).padStart(2, '0'),
+                    String(targetDate.getDate()).padStart(2, '0')
+                ].join('-');
+
+                if (!state.tasksByDate[iso]) {
+                    state.tasksByDate[iso] = [];
+                }
+
+                // Prevent duplicate task with exact same title and start/end time on that day
+                const alreadyExists = state.tasksByDate[iso].some(
+                    t => t.text === text && t.startTime === startTime && t.endTime === endTime
+                );
+
+                if (!alreadyExists) {
+                    state.tasksByDate[iso].push({
+                        id: `task_${Date.now()}_${offset}_${Math.random().toString(36).slice(2, 6)}`,
+                        startTime,
+                        endTime,
+                        text,
+                        completed: false
+                    });
+                    createdCount++;
+                }
+            }
+            return createdCount;
+        }
+
+        function repeatTaskWeekdays(taskId) {
+            const tasks = state.tasksByDate[state.selectedDate] || [];
+            const sourceTask = tasks.find(t => t.id === taskId);
+            if (!sourceTask) return;
+
+            const added = scheduleTaskAcrossDays({
+                baseIsoDate: state.selectedDate,
+                startTime: sourceTask.startTime,
+                endTime: sourceTask.endTime,
+                text: sourceTask.text,
+                repeatMode: 'weekdays'
+            });
+
+            saveTasks();
+            renderCalendar();
+            showToast(
+                added > 0
+                    ? `Tarea replicada de Lun a Vie en ${added} días hábiles más`
+                    : 'Esta tarea ya estaba programada de Lun a Vie en las próximas 4 semanas'
+            );
+        }
 
             if (!state.tasksByDate[state.selectedDate]) {
                 state.tasksByDate[state.selectedDate] = [];
