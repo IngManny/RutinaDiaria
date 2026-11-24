@@ -145,7 +145,7 @@
                 <div id="week-strip" class="grid grid-cols-7 gap-1 py-2 shrink-0"></div>
 
                 <!-- Add Task Form with Day Groups & Auto-Video Toggle -->
-                <form onsubmit="addDailyTask(event)" class="flex flex-wrap items-center gap-1.5 mb-2 shrink-0">
+                <form id="add-task-form" onsubmit="addDailyTask(event)" class="flex flex-wrap items-center gap-1.5 mb-2 shrink-0">
                     <div class="flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 shrink-0">
                         <span class="text-[10px] text-zinc-500 font-medium">De</span>
                         <input type="time" id="task-start-input" value="07:30" required aria-label="Hora de inicio"
@@ -199,13 +199,8 @@
                     <div class="flex items-center gap-1.5">
                         <button type="button" onclick="toggleSpotifyInput()" class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Agregar nueva playlist">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                            <span class="hidden sm:inline">Agregar Playlist</span>
+                            <span>Agregar Playlist</span>
                         </button>
-                        <a id="spotify-external-btn" href="https://open.spotify.com" target="_blank" rel="noopener noreferrer"
-                           class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#1DB954]/20 transition">
-                            <span>Abrir Spotify</span>
-                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                        </a>
                     </div>
                 </div>
 
@@ -578,6 +573,16 @@
             }
         }
 
+        function refreshIcons() {
+            try {
+                if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                    window.lucide.createIcons();
+                }
+            } catch (_e) {
+                // Prevent icon rendering errors from interrupting UI updates
+            }
+        }
+
         let appState = {
             selectedDate: getTodayStr(),
             tasksByDate: safeJsonParse(localStorage.getItem(STORAGE_KEYS.TASKS), {}),
@@ -799,7 +804,9 @@
             const seriesId = groupKey !== 'single' ? 'grp_' + Date.now() : null;
 
             targetDates.forEach((dateKey, idx) => {
-                if (!appState.tasksByDate[dateKey]) appState.tasksByDate[dateKey] = [];
+                if (!Array.isArray(appState.tasksByDate[dateKey])) {
+                    appState.tasksByDate[dateKey] = [];
+                }
                 const newTask = {
                     id: 'task_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
                     seriesId,
@@ -809,7 +816,7 @@
                     completed: false
                 };
                 appState.tasksByDate[dateKey].push(newTask);
-                appState.tasksByDate[dateKey].sort((a, b) => a.startTime.localeCompare(b.startTime));
+                appState.tasksByDate[dateKey].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
 
                 if (bindAutoVideo) {
                     appState.linkedTaskByDate[dateKey] = newTask.id;
@@ -821,7 +828,7 @@
             }
 
             saveToStorage(STORAGE_KEYS.TASKS, appState.tasksByDate);
-            textInput.value = '';
+            if (textInput) textInput.value = '';
             if (autoVideoCb) autoVideoCb.checked = false;
 
             renderDateHeaderAndStrip();
@@ -854,11 +861,20 @@
             updateSurveySyncSummary();
         }
 
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
         function renderDailyTasks() {
             const container = document.getElementById('daily-tasks-list');
             if (!container) return;
 
-            const tasks = appState.tasksByDate[appState.selectedDate] || [];
+            const rawTasks = appState.tasksByDate[appState.selectedDate];
+            const tasks = Array.isArray(rawTasks) ? rawTasks : [];
             const linkedTaskId = appState.linkedTaskByDate[appState.selectedDate] || '';
 
             if (tasks.length === 0) {
@@ -884,10 +900,10 @@
                             <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTaskDone('${task.id}')"
                                    class="w-4 h-4 rounded accent-indigo-500 cursor-pointer shrink-0">
                             <span class="text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded bg-zinc-900 text-indigo-300 border border-zinc-800 shrink-0">
-                                ${task.startTime} - ${task.endTime}
+                                ${escapeHtml(task.startTime)} - ${escapeHtml(task.endTime)}
                             </span>
                             <span class="text-xs font-medium truncate ${task.completed ? 'line-through text-zinc-500' : 'text-zinc-100'}">
-                                ${task.title}
+                                ${escapeHtml(task.title)}
                             </span>
                             ${isLinked ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">Auto-Video</span>' : ''}
                         </label>
@@ -905,7 +921,7 @@
                 `;
             }).join('');
 
-            if (window.lucide) lucide.createIcons();
+            refreshIcons();
         }
 
         // =====================================================================
@@ -971,14 +987,12 @@
         function renderSpotifyPlaylistsUI() {
             const bar = document.getElementById('spotify-playlists-bar');
             const iframe = document.getElementById('spotify-embed-iframe');
-            const externalBtn = document.getElementById('spotify-external-btn');
             const wrapper = document.getElementById('spotify-embed-wrapper');
             if (!bar) return;
 
             if (!appState.spotifyLists.length) {
                 bar.innerHTML = `<span class="text-[11px] text-zinc-500">Sin playlists guardadas. Pulsa "Agregar Playlist" para añadir una.</span>`;
                 if (wrapper) wrapper.classList.add('hidden');
-                if (externalBtn) externalBtn.href = 'https://open.spotify.com';
                 return;
             }
 
@@ -988,9 +1002,6 @@
 
             if (iframe && iframe.src !== active.embedUrl) {
                 iframe.src = active.embedUrl;
-            }
-            if (externalBtn && active.url) {
-                externalBtn.href = active.url;
             }
 
             bar.innerHTML = appState.spotifyLists.map(item => {
@@ -1002,7 +1013,7 @@
                             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200'
                     }">
                         <button type="button" onclick="selectSpotifyPlaylist('${item.id}')" class="pl-2.5 pr-1.5 py-1 truncate max-w-[140px]">
-                            ${item.name}
+                            ${escapeHtml(item.name)}
                         </button>
                         <button type="button" onclick="deleteSpotifyPlaylist('${item.id}')" title="Eliminar playlist"
                                 class="pr-2 pl-1 py-1 text-zinc-400 hover:text-rose-400 transition">
@@ -1012,7 +1023,7 @@
                 `;
             }).join('');
 
-            if (window.lucide) lucide.createIcons();
+            refreshIcons();
         }
 
         // =====================================================================
@@ -1213,7 +1224,7 @@
                         </a>
                     </div>
                 `;
-                if (window.lucide) lucide.createIcons();
+                refreshIcons();
                 startSocialCountdown(video.url);
             }
 
@@ -1243,7 +1254,7 @@
             if (badgeName) badgeName.textContent = preset.name;
 
             const optionsHtml = Object.values(appState.presets).map(p =>
-                `<option value="${p.id}" ${p.id === appState.activePresetId ? 'selected' : ''}>${p.name}</option>`
+                `<option value="${p.id}" ${p.id === appState.activePresetId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`
             ).join('');
 
             const quickSelect = document.getElementById('quick-preset-select');
@@ -1387,7 +1398,7 @@
                     }">
                         <button type="button" onclick="playVideoAtIndex(${idx}, true)" class="flex items-center gap-2 min-w-0 flex-1 text-left">
                             <span class="text-[11px] font-mono font-bold ${active ? 'text-emerald-400' : 'text-zinc-500'}">#${idx + 1}</span>
-                            <span class="text-xs font-medium truncate ${active ? 'text-white' : 'text-zinc-300'}">${v.title}</span>
+                            <span class="text-xs font-medium truncate ${active ? 'text-white' : 'text-zinc-300'}">${escapeHtml(v.title)}</span>
                         </button>
                         <button type="button" onclick="removeVideoFromActivePreset('${v.id}')" title="Quitar video"
                                 class="p-1 rounded-lg text-zinc-500 hover:text-rose-400 transition">
@@ -1397,13 +1408,13 @@
                 `;
             }).join('');
 
-            if (window.lucide) lucide.createIcons();
+            refreshIcons();
         }
 
         function renderScheduleAssignmentTab() {
             const container = document.getElementById('drawer-tab-schedule');
             if (!container) return;
-            const presetOptions = Object.values(appState.presets).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            const presetOptions = Object.values(appState.presets).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
 
             container.innerHTML = DAY_NAMES_FULL.map((name, dow) => {
                 const assignedId = appState.dayAssignments[dow] || appState.activePresetId;
@@ -1434,7 +1445,7 @@
             const linkedId = appState.linkedTaskByDate[appState.selectedDate] || '';
 
             select.innerHTML = `<option value="">-- Vincular a una tarea --</option>` + tasks.map(t =>
-                `<option value="${t.id}" ${t.id === linkedId ? 'selected' : ''}>${t.startTime} - ${t.title}</option>`
+                `<option value="${t.id}" ${t.id === linkedId ? 'selected' : ''}>${escapeHtml(t.startTime)} - ${escapeHtml(t.title)}</option>`
             ).join('');
 
             const linkedTask = tasks.find(t => t.id === linkedId);
@@ -1496,7 +1507,7 @@
             renderPresetSelectors();
             playVideoAtIndex(0, false);
 
-            if (window.lucide) lucide.createIcons();
+            refreshIcons();
 
             setInterval(() => {
                 updateClock();
