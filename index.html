@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#09090b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mi Rutina">
+    <title>Mi Rutina Diaria | PWA Dashboard</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        zinc: {
+                            850: '#1f1f23',
+                            925: '#111114',
+                            950: '#09090b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar for sleek dark UI */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #18181b;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+
+        /* Ensure iframe responsiveness */
+        .video-wrapper iframe,
+        .video-wrapper video {
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-emerald-500/30 selection:text-emerald-200 overflow-x-hidden lg:overflow-hidden">
+
+    <!-- Main Split-Screen Container: 50% Left / 50% Right on Desktop, Stacked on Mobile -->
+    <div class="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row">
+
+        <!-- ========================================================= -->
+        <!-- LEFT HALF (50% Width): Divided vertically into 3 sections -->
+        <!-- ========================================================= -->
+        <aside class="w-full lg:w-1/2 lg:h-full flex flex-col gap-3 p-3 sm:p-4 bg-zinc-950 border-b lg:border-b-0 lg:border-r border-zinc-800/80 lg:overflow-y-auto">
+            
+            <!-- Top App Bar / PWA Indicator -->
+            <header class="flex items-center justify-between px-1 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-sm sm:text-base font-bold tracking-tight text-white leading-none">Rutina Diaria</h1>
+                        <p class="text-[11px] text-zinc-400 mt-0.5" id="header-date-label">Cargando fecha...</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <span id="pwa-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-zinc-900 border border-zinc-800 text-emerald-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        PWA Lista
+                    </span>
+                </div>
+            </header>
+
+            <!-- SECTION 1 (Top Left - 1/3 height): Daily Calendar & Tasks -->
+            <section class="flex-1 min-h-[260px] lg:min-h-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col shadow-xl overflow-hidden">
+                <!-- Calendar Header, Alarm Controls & Day Navigation -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-zinc-800/80 shrink-0">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-400">
+                            <i data-lucide="calendar-days" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xs sm:text-sm font-semibold text-zinc-100 leading-none">Calendario Diario</h2>
+                            <p id="live-clock-display" class="text-[10px] font-mono text-zinc-400 mt-0.5">--:--:--</p>
+                        </div>
+                    </div>
+
+                    <!-- Alarm Controls & Date Controls -->
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <!-- Alarm Sound / Permission Toggle & Test -->
+                        <div class="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+                            <button type="button" id="alarm-sound-toggle-btn" onclick="toggleAlarmSound()" title="Activar o silenciar alarmas de inicio y fin"
+                                    class="px-2 py-1 rounded-lg bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 text-[11px] font-medium flex items-center gap-1 transition">
+                                <i id="alarm-sound-icon" data-lucide="bell-ring" class="w-3.5 h-3.5"></i>
+                                <span id="alarm-sound-label" class="hidden sm:inline">Alarmas ON</span>
+                            </button>
+                            <button type="button" onclick="triggerTestAlarm()" title="Probar sonido y notificación de alarma"
+                                    class="px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium flex items-center gap-1 transition">
+                                <i data-lucide="volume-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                <span class="hidden md:inline">Probar</span>
+                            </button>
+                        </div>
+
+                        <!-- Date Controls -->
+                        <div class="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+                            <button onclick="changeDay(-1)" title="Día anterior" class="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition">
+                                <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <input type="date" id="date-picker" onchange="selectDateFromPicker(this.value)" 
+                                   class="bg-transparent text-xs font-medium text-zinc-200 px-1.5 focus:outline-none cursor-pointer [color-scheme:dark]">
+                            <button onclick="changeDay(1)" title="Día siguiente" class="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition">
+                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button onclick="goToToday()" class="ml-1 px-2 py-1 text-[11px] font-medium rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 transition">
+                                Hoy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Week Strip (7 days around selected date) -->
+                <div id="week-strip" class="grid grid-cols-7 gap-1 py-2 shrink-0">
+                    <!-- Populated via JS -->
+                </div>
+
+                <!-- Add Task Input Row (Start Time + End Time + Title) -->
+                <form onsubmit="addDailyTask(event)" class="flex flex-wrap sm:flex-nowrap items-center gap-1.5 mb-2 shrink-0">
+                    <div class="flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 shrink-0" title="Hora de inicio y hora de fin">
+                        <span class="text-[10px] text-zinc-500 font-medium">De</span>
+                        <input type="time" id="task-start-input" value="07:30" required aria-label="Hora de inicio"
+                               class="bg-transparent text-xs text-zinc-200 focus:outline-none [color-scheme:dark]">
+                        <span class="text-[10px] text-zinc-500 font-medium">a</span>
+                        <input type="time" id="task-end-input" value="08:00" required aria-label="Hora de fin"
+                               class="bg-transparent text-xs text-zinc-200 focus:outline-none [color-scheme:dark]">
+                    </div>
+                    <input type="text" id="task-text-input" placeholder="Ej. Estiramiento matutino..." required
+                           class="flex-1 min-w-[130px] bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500">
+                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-1 transition shrink-0">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        <span>Agregar</span>
+                    </button>
+                </form>
+
+                <!-- Daily Tasks List -->
+                <div id="daily-tasks-list" class="flex-1 overflow-y-auto space-y-1.5 pr-1">
+                    <!-- Populated via JS -->
+                </div>
+            </section>
+
+            <!-- SECTION 2 (Middle Left - 1/3 height): Spotify Playlist Box -->
+            <section class="flex-1 min-h-[230px] lg:min-h-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl overflow-hidden">
+                <!-- Spotify Card Header -->
+                <div class="flex items-center justify-between gap-2 mb-2 shrink-0">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 rounded-lg bg-[#1DB954]/15 text-[#1DB954]">
+                            <i data-lucide="music" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xs sm:text-sm font-semibold text-zinc-100 leading-none">Mi Playlist de Spotify</h2>
+                            <p class="text-[11px] text-zinc-400 mt-0.5">Música para tu rutina y enfoque</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="toggleSpotifyInput()" class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Cambiar enlace de playlist">
+                            <i data-lucide="link" class="w-3.5 h-3.5"></i>
+                            <span class="hidden sm:inline">Cambiar Playlist</span>
+                        </button>
+                        <a id="spotify-external-btn" href="https://open.spotify.com/playlist/37i9dQZF1DX8NTLI2TtZa6" target="_blank" rel="noopener noreferrer"
+                           class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#1DB954]/20 transition">
+                            <span>Abrir en Spotify</span>
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Collapsible URL Input Bar for User's Spotify Playlist -->
+                <div id="spotify-url-form" class="hidden mb-2 shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        <input type="url" id="spotify-url-input" placeholder="Pega aquí el enlace de tu playlist de Spotify..."
+                               class="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-[#1DB954]">
+                        <button onclick="saveSpotifyPlaylist()" class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-semibold transition">
+                            Guardar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Official Spotify Embed Player -->
+                <div class="flex-1 w-full rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800/80 min-h-[152px]">
+                    <iframe id="spotify-embed-iframe"
+                            src="https://open.spotify.com/embed/playlist/37i9dQZF1DX8NTLI2TtZa6?utm_source=generator&theme=0"
+                            width="100%"
+                            height="100%"
+                            frameborder="0"
+                            allowfullscreen=""
+                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                            loading="lazy"
+                            class="w-full h-full">
+                    </iframe>
+                </div>
+            </section>
+
+            <!-- SECTION 3 (Bottom Left - 1/3 height): Daily Task Completion Survey -->
+            <section class="flex-1 min-h-[215px] lg:min-h-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl overflow-hidden">
+                <!-- Survey Header & Live Streak Badge -->
+                <div class="flex items-center justify-between gap-2 pb-2 border-b border-zinc-800/80 shrink-0">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <div class="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 shrink-0">
+                            <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h2 class="text-xs sm:text-sm font-semibold text-zinc-100 leading-none truncate">Evaluación del Día</h2>
+                            <p id="survey-sync-summary" class="text-[11px] text-zinc-400 mt-0.5 truncate">
+                                Tareas completadas: 0 de 0 (0%)
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Consecutive Days Streak Badge -->
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <span id="survey-saved-indicator" class="hidden px-2 py-0.5 rounded-md text-[10px] font-semibold bg-zinc-800 text-emerald-400 border border-emerald-500/30">
+                            Guardado
+                        </span>
+                        <span id="survey-streak-badge" title="Días consecutivos marcados como cumplidos"
+                              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                            <i data-lucide="flame" class="w-3.5 h-3.5 text-amber-400"></i>
+                            <span>Racha: <span id="survey-streak-count">0</span> d</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 3-Option Completion Status Selector -->
+                <div class="my-2 shrink-0">
+                    <p class="text-[11px] font-medium text-zinc-400 mb-1.5">¿Se cumplieron las tareas de este día?</p>
+                    <div class="grid grid-cols-3 gap-1.5" id="survey-status-group">
+                        <button type="button" data-status="yes" onclick="selectSurveyStatus('yes')"
+                                class="survey-opt-btn py-1.5 px-2 rounded-xl border border-zinc-800 bg-zinc-950/80 text-zinc-300 hover:border-emerald-500/50 text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1 transition">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
+                            <span class="truncate">Sí, completado</span>
+                        </button>
+
+                        <button type="button" data-status="partial" onclick="selectSurveyStatus('partial')"
+                                class="survey-opt-btn py-1.5 px-2 rounded-xl border border-zinc-800 bg-zinc-950/80 text-zinc-300 hover:border-amber-500/50 text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1 transition">
+                            <i data-lucide="minus-circle" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
+                            <span class="truncate">Parcialmente</span>
+                        </button>
+
+                        <button type="button" data-status="no" onclick="selectSurveyStatus('no')"
+                                class="survey-opt-btn py-1.5 px-2 rounded-xl border border-zinc-800 bg-zinc-950/80 text-zinc-300 hover:border-rose-500/50 text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1 transition">
+                            <i data-lucide="x-circle" class="w-3.5 h-3.5 text-rose-400 shrink-0"></i>
+                            <span class="truncate">No cumplido</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Optional Note & Save Button Form -->
+                <form onsubmit="saveDailySurvey(event)" class="flex items-center gap-1.5 shrink-0">
+                    <input type="text" id="survey-note-input" placeholder="Notas o ajustes para mañana..."
+                           class="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
+                    <button type="submit"
+                            class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-emerald-600/15 transition shrink-0">
+                        <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                        <span>Guardar Evaluación</span>
+                    </button>
+                </form>
+            </section>
+
+        </aside>
+
+        <!-- ========================================================= -->
+        <!-- RIGHT HALF (50% Width, Full Height): Video Routine Player -->
+        <!-- ========================================================= -->
+        <main class="w-full lg:w-1/2 min-h-[540px] lg:h-full flex flex-col bg-zinc-925 p-3 sm:p-4 relative">
+            
+            <!-- Video Player Top Control Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 shrink-0">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 shrink-0">
+                        <i data-lucide="play-circle" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span id="video-counter-badge" class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-emerald-500/20 text-emerald-300 shrink-0">
+                                Video 1 de 4
+                            </span>
+                            <span id="video-platform-badge" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-zinc-800 text-zinc-300 shrink-0">
+                                YouTube
+                            </span>
+                            <!-- Active Preset Indicator -->
+                            <span id="active-preset-badge" class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 truncate max-w-[160px] sm:max-w-[200px]" title="Lista predeterminada activa">
+                                <i data-lucide="folder-check" class="w-3 h-3 shrink-0"></i>
+                                <span id="active-preset-name" class="truncate">Rutina General</span>
+                            </span>
+                        </div>
+                        <h2 id="current-video-title" class="text-sm sm:text-base font-bold text-white truncate mt-1">
+                            Cargando rutina...
+                        </h2>
+                    </div>
+                </div>
+
+                <!-- Auto-Advance Toggle, Quick Preset Selector & Queue Drawer Button -->
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                    <!-- Quick Preset Selector -->
+                    <div class="relative hidden sm:block">
+                        <select id="quick-preset-select" onchange="selectPresetManually(this.value)" title="Cambiar lista predeterminada"
+                                class="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs font-medium rounded-xl px-2.5 py-1.5 pr-7 focus:outline-none focus:border-indigo-500 cursor-pointer max-w-[155px] truncate">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+
+                    <!-- Auto-advance Switch -->
+                    <label class="flex items-center gap-2 cursor-pointer bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl select-none">
+                        <span class="text-xs font-medium text-zinc-300">Auto-siguiente</span>
+                        <div class="relative">
+                            <input type="checkbox" id="auto-advance-toggle" checked onchange="toggleAutoAdvance(this.checked)" class="sr-only peer">
+                            <div class="w-8 h-4 bg-zinc-700 rounded-full peer peer-checked:bg-emerald-500 transition-colors"></div>
+                            <div class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+                        </div>
+                    </label>
+
+                    <!-- Open Playlist / Add Videos Drawer -->
+                    <button onclick="toggleQueueDrawer()" class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold flex items-center gap-1.5 transition border border-zinc-700/70">
+                        <i data-lucide="list-video" class="w-4 h-4 text-emerald-400"></i>
+                        <span>Lista (<span id="queue-count">4</span>)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Full-Height Video Stage -->
+            <div class="flex-1 w-full rounded-2xl bg-black border border-zinc-800/90 overflow-hidden relative flex flex-col justify-center items-center shadow-2xl">
+                
+                <!-- Dynamic Player Container (YouTube API / Instagram / Facebook / MP4) -->
+                <div id="video-stage" class="video-wrapper w-full h-full flex items-center justify-center">
+                    <!-- Player injected here -->
+                </div>
+
+                <!-- Overlay Banner for Instagram / Facebook Reels (Timer + External Fallback) -->
+                <div id="social-reel-helper" class="hidden absolute top-3 left-3 right-3 bg-zinc-900/95 backdrop-blur-md border border-zinc-700/80 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2 z-20 shadow-lg">
+                    <div class="flex items-center gap-2 text-xs text-zinc-200">
+                        <i data-lucide="info" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                        <span>
+                            Reel social detectado. Avance automático en: 
+                            <strong id="social-countdown-text" class="text-emerald-400 font-mono">30s</strong>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a id="reel-external-link" href="#" target="_blank" rel="noopener noreferrer" 
+                           class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-100 text-[11px] font-medium flex items-center gap-1 transition">
+                            <span>Abrir en App</span>
+                            <i data-lucide="external-link" class="w-3 h-3"></i>
+                        </a>
+                        <button onclick="playNextVideo()" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold transition">
+                            Saltar ahora
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation Controls: Previous Video / Next Video / Simulate End -->
+            <div class="pt-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <button onclick="playPreviousVideo()" id="btn-prev-video"
+                        class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-100 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition active:scale-[0.98]">
+                    <i data-lucide="skip-back" class="w-4 h-4 text-emerald-400"></i>
+                    <span>Video Anterior</span>
+                </button>
+
+                <button onclick="playNextVideo()" title="Simular finalización y pasar al siguiente video"
+                        class="hidden sm:flex px-3 py-2.5 rounded-xl bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 text-xs font-medium items-center gap-1.5 transition">
+                    <i data-lucide="fast-forward" class="w-3.5 h-3.5"></i>
+                    <span>Simular fin de video</span>
+                </button>
+
+                <button onclick="playNextVideo()" id="btn-next-video"
+                        class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition active:scale-[0.98]">
+                    <span>Siguiente Video</span>
+                    <i data-lucide="skip-forward" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- SLIDE-OVER QUEUE & PRESETS MODAL (Inside Right Half)      -->
+            <!-- ========================================================= -->
+            <div id="queue-drawer" class="hidden absolute inset-3 sm:inset-4 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/80 rounded-2xl z-30 flex flex-col p-4 shadow-2xl">
+                <!-- Drawer Header -->
+                <div class="flex items-center justify-between pb-3 border-b border-zinc-800 shrink-0">
+                    <div>
+                        <h3 class="text-base font-bold text-white">Gestor de Listas y Videos</h3>
+                        <p class="text-xs text-zinc-400">Crea listas predeterminadas y asígnalas automáticamente por día</p>
+                    </div>
+                    <button onclick="toggleQueueDrawer()" class="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Drawer Navigation Tabs: Videos vs Day Assignment -->
+                <div class="flex items-center gap-1.5 mt-3 p-1 bg-zinc-950 rounded-xl border border-zinc-800 shrink-0">
+                    <button type="button" id="tab-btn-videos" onclick="switchDrawerTab('videos')"
+                            class="flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 bg-zinc-800 text-white transition">
+                        <i data-lucide="film" class="w-3.5 h-3.5 text-emerald-400"></i>
+                        <span>Listas y Videos</span>
+                    </button>
+                    <button type="button" id="tab-btn-schedule" onclick="switchDrawerTab('schedule')"
+                            class="flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition">
+                        <i data-lucide="calendar-check" class="w-3.5 h-3.5 text-indigo-400"></i>
+                        <span>Asignación por Día</span>
+                    </button>
+                </div>
+
+                <!-- TAB 1: PRESET SELECTOR, MANAGEMENT & VIDEOS IN PRESET -->
+                <div id="drawer-tab-videos" class="flex-1 flex flex-col min-h-0 mt-3">
+                    <!-- Preset Management Bar -->
+                    <div class="p-2.5 rounded-xl bg-zinc-950/90 border border-zinc-800 space-y-2 shrink-0">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 flex-1 min-w-[180px]">
+                                <span class="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider shrink-0">Lista:</span>
+                                <select id="drawer-preset-select" onchange="selectPresetManually(this.value)"
+                                        class="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white focus:outline-none focus:border-indigo-500">
+                                    <!-- Populated via JS -->
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="openPresetActionForm('create')" title="Nueva lista predeterminada"
+                                        class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1 transition">
+                                    <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>
+                                    <span>Nueva</span>
+                                </button>
+                                <button type="button" onclick="openPresetActionForm('rename')" title="Renombrar lista actual"
+                                        class="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition">
+                                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button type="button" onclick="deleteCurrentPreset()" title="Eliminar lista actual"
+                                        class="p-1.5 rounded-lg bg-zinc-800 hover:bg-rose-950/70 text-zinc-400 hover:text-rose-400 transition">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Inline Form for Creating or Renaming a Preset (No alert/prompt used) -->
+                        <form id="preset-name-form" onsubmit="submitPresetNameForm(event)" class="hidden pt-2 border-t border-zinc-800/80 flex items-center gap-1.5">
+                            <input type="text" id="preset-name-input" placeholder="Nombre de la lista (ej. Lunes / Miércoles / Viernes)" required
+                                   class="flex-1 bg-zinc-900 border border-indigo-500/60 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none">
+                            <button type="submit" id="preset-name-submit-btn" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">
+                                Crear
+                            </button>
+                            <button type="button" onclick="closePresetActionForm()" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition">
+                                Cancelar
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Add New Video to Selected Preset Form -->
+                    <form onsubmit="addVideoToQueue(event)" class="mt-2.5 p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2 shrink-0">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-medium text-zinc-400 mb-1">Título del video</label>
+                                <input type="text" id="new-video-title" placeholder="Ej. Movilidad articular 5 min" required
+                                       class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-zinc-400 mb-1">Enlace (YouTube, IG Reel, FB Reel o MP4)</label>
+                                <input type="url" id="new-video-url" placeholder="https://www.youtube.com/watch?v=..." required
+                                       class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between pt-0.5">
+                            <span class="text-[11px] text-zinc-500">Se guardará dentro de la lista seleccionada arriba.</span>
+                            <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                                <span>Agregar video</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Video Queue List -->
+                    <div id="video-queue-list" class="flex-1 overflow-y-auto mt-2.5 space-y-2 pr-1">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+                <!-- TAB 2: DAY OF WEEK AUTOMATIC ASSIGNMENT -->
+                <div id="drawer-tab-schedule" class="hidden flex-1 flex flex-col min-h-0 mt-3">
+                    <!-- Auto-switch Toggle Card -->
+                    <div class="p-3 rounded-xl bg-indigo-950/30 border border-indigo-500/30 flex items-center justify-between gap-3 shrink-0">
+                        <div>
+                            <h4 class="text-xs sm:text-sm font-semibold text-indigo-200">Cambio automático según el calendario</h4>
+                            <p class="text-[11px] text-zinc-400 mt-0.5">Al abrir la app o elegir un día en el calendario, se cargará su lista asignada.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" id="auto-switch-by-day-toggle" checked onchange="toggleAutoSwitchByDay(this.checked)" class="sr-only peer">
+                            <div class="w-10 h-5 bg-zinc-700 rounded-full peer peer-checked:bg-indigo-500 transition-colors"></div>
+                            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                        </label>
+                    </div>
+
+                    <!-- Monday to Sunday Mapping List -->
+                    <div id="day-schedule-list" class="flex-1 overflow-y-auto mt-3 space-y-2 pr-1">
+                        <!-- Populated via JS (Lunes a Domingo) -->
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Custom Toast Notification Box (Replaces alert()) -->
+    <div id="toast-box" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 translate-y-2">
+        <div class="bg-zinc-900 border border-zinc-700 text-zinc-100 px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-medium">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+            <span id="toast-message">Acción completada</span>
+        </div>
+    </div>
+
+    <!-- Prominent Dismissible Alarm Banner for Task Start & End -->
+    <div id="alarm-banner" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-md bg-zinc-900/95 backdrop-blur-xl border-2 border-amber-500/80 text-zinc-100 p-3.5 rounded-2xl shadow-2xl shadow-amber-500/20 transition-all">
+        <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3 min-w-0">
+                <div id="alarm-banner-icon-wrap" class="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0 mt-0.5">
+                    <i data-lucide="alarm-clock" class="w-5 h-5 animate-bounce"></i>
+                </div>
+                <div class="min-w-0">
+                    <span id="alarm-banner-badge" class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300">
+                        Inicio de tarea
+                    </span>
+                    <h4 id="alarm-banner-title" class="text-sm font-bold text-white mt-1 truncate">
+                        Bloque de rutina
+                    </h4>
+                    <p id="alarm-banner-subtitle" class="text-xs text-zinc-300 mt-0.5">
+                        Horario: 07:30 - 08:00
+                    </p>
+                </div>
+            </div>
+            <button type="button" onclick="dismissAlarmBanner()" title="Cerrar alarma"
+                    class="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition shrink-0">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        <div id="alarm-banner-actions" class="mt-3 pt-2.5 border-t border-zinc-800 flex items-center justify-end gap-2">
+            <button type="button" id="alarm-banner-complete-btn" onclick="completeTaskFromAlarm()"
+                    class="hidden px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                <span>Marcar tarea como completada</span>
+            </button>
+            <button type="button" onclick="dismissAlarmBanner()"
+                    class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium transition">
+                Entendido
+            </button>
+        </div>
+    </div>
+
+    <!-- YouTube IFrame Player API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <script>
+        /* =====================================================================
+           1. PWA DYNAMIC MANIFEST SETUP
+           ===================================================================== */
+        (function setupPWAManifest() {
+            const manifest = {
+                name: "Mi Rutina Diaria PWA",
+                short_name: "Mi Rutina",
+                start_url: ".",
+                display: "standalone",
+                background_color: "#09090b",
+                theme_color: "#09090b",
+                description: "Panel diario con calendario, playlist de Spotify y videos guiados con avance automático.",
+                icons: [
+                    {
+                        src: "https://placehold.co/192x192/10b981/ffffff?text=RD",
+                        sizes: "192x192",
+                        type: "image/png"
+                    },
+                    {
+                        src: "https://placehold.co/512x512/10b981/ffffff?text=Rutina",
+                        sizes: "512x512",
+                        type: "image/png"
+                    }
+                ]
+            };
+            const stringManifest = JSON.stringify(manifest);
+            const blob = new Blob([stringManifest], { type: 'application/json' });
+            const manifestURL = URL.createObjectURL(blob);
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestURL;
+            document.head.appendChild(link);
+        })();
+
+        /* =====================================================================
+           2. APPLICATION STATE & STORAGE (PRESETS + DAY SCHEDULE)
+           ===================================================================== */
+        const STORAGE_KEYS = {
+            TASKS: 'rutina_pwa_tasks_v1',
+            PRESETS: 'rutina_pwa_presets_v2',
+            DAY_SCHEDULE: 'rutina_pwa_day_schedule_v2',
+            ACTIVE_PRESET: 'rutina_pwa_active_preset_v2',
+            AUTO_SWITCH_DAY: 'rutina_pwa_auto_switch_day_v2',
+            SPOTIFY: 'rutina_pwa_spotify_v1',
+            SURVEYS: 'rutina_pwa_daily_surveys_v1',
+            TRIGGERED_ALARMS: 'rutina_pwa_triggered_alarms_v1',
+            ALARM_MUTED: 'rutina_pwa_alarm_muted_v1'
+        };
+
+        // Pre-loaded sample preset playlists
+        const DEFAULT_PRESETS = {
+            'preset_lmv': {
+                id: 'preset_lmv',
+                name: 'Lunes / Miércoles / Viernes',
+                videos: [
+                    {
+                        id: 'v1',
+                        title: '1. Estiramiento Matutino de 5 Minutos',
+                        url: 'https://www.youtube.com/watch?v=4pKly2JojMw',
+                        platform: 'youtube',
+                        embedId: '4pKly2JojMw'
+                    },
+                    {
+                        id: 'v2',
+                        title: '2. Activación Física Rápida en Casa',
+                        url: 'https://www.youtube.com/watch?v=ml6cT4AZdqI',
+                        platform: 'youtube',
+                        embedId: 'ml6cT4AZdqI'
+                    },
+                    {
+                        id: 'v3',
+                        title: '3. Respiración Guiada y Enfoque Mental',
+                        url: 'https://www.youtube.com/watch?v=tybOi4hjZFQ',
+                        platform: 'youtube',
+                        embedId: 'tybOi4hjZFQ'
+                    }
+                ]
+            },
+            'preset_mj': {
+                id: 'preset_mj',
+                name: 'Martes / Jueves',
+                videos: [
+                    {
+                        id: 'v4',
+                        title: '1. Relajación y Postura de Oficina',
+                        url: 'https://www.youtube.com/watch?v=BdfTuxdfIE8',
+                        platform: 'youtube',
+                        embedId: 'BdfTuxdfIE8'
+                    },
+                    {
+                        id: 'v5',
+                        title: '2. Movilidad Suave y Respiración',
+                        url: 'https://www.youtube.com/watch?v=4pKly2JojMw',
+                        platform: 'youtube',
+                        embedId: '4pKly2JojMw'
+                    }
+                ]
+            },
+            'preset_finde': {
+                id: 'preset_finde',
+                name: 'Fin de Semana',
+                videos: [
+                    {
+                        id: 'v6',
+                        title: '1. Meditación y Calma Profunda',
+                        url: 'https://www.youtube.com/watch?v=tybOi4hjZFQ',
+                        platform: 'youtube',
+                        embedId: 'tybOi4hjZFQ'
+                    },
+                    {
+                        id: 'v7',
+                        title: '2. Estiramiento Completo de Recuperación',
+                        url: 'https://www.youtube.com/watch?v=BdfTuxdfIE8',
+                        platform: 'youtube',
+                        embedId: 'BdfTuxdfIE8'
+                    }
+                ]
+            }
+        };
+
+        // Day of week mapping (0 = Domingo, 1 = Lunes, ..., 6 = Sábado)
+        const DEFAULT_DAY_SCHEDULE = {
+            1: 'preset_lmv',   // Lunes
+            2: 'preset_mj',    // Martes
+            3: 'preset_lmv',   // Miércoles
+            4: 'preset_mj',    // Jueves
+            5: 'preset_lmv',   // Viernes
+            6: 'preset_finde', // Sábado
+            0: 'preset_finde'  // Domingo
+        };
+
+        const DAYS_ORDERED_ES = [
+            { dayIndex: 1, label: 'Lunes' },
+            { dayIndex: 2, label: 'Martes' },
+            { dayIndex: 3, label: 'Miércoles' },
+            { dayIndex: 4, label: 'Jueves' },
+            { dayIndex: 5, label: 'Viernes' },
+            { dayIndex: 6, label: 'Sábado' },
+            { dayIndex: 0, label: 'Domingo' }
+        ];
+
+        const savedAutoSwitch = localStorage.getItem(STORAGE_KEYS.AUTO_SWITCH_DAY);
+        const savedAlarmMuted = localStorage.getItem(STORAGE_KEYS.ALARM_MUTED);
+
+        let state = {
+            selectedDate: getTodayISO(),
+            tasksByDate: JSON.parse(localStorage.getItem(STORAGE_KEYS.TASKS)) || {},
+            surveysByDate: JSON.parse(localStorage.getItem(STORAGE_KEYS.SURVEYS)) || {},
+            currentDraftSurveyStatus: null,
+            presets: JSON.parse(localStorage.getItem(STORAGE_KEYS.PRESETS)) || DEFAULT_PRESETS,
+            daySchedule: JSON.parse(localStorage.getItem(STORAGE_KEYS.DAY_SCHEDULE)) || DEFAULT_DAY_SCHEDULE,
+            activePresetId: localStorage.getItem(STORAGE_KEYS.ACTIVE_PRESET) || 'preset_lmv',
+            autoSwitchByDay: savedAutoSwitch === null ? true : savedAutoSwitch === 'true',
+            currentVideoIndex: 0,
+            autoAdvance: true,
+            spotifyPlaylistUrl: localStorage.getItem(STORAGE_KEYS.SPOTIFY) || 'https://open.spotify.com/playlist/37i9dQZF1DX8NTLI2TtZa6',
+            alarmMuted: savedAlarmMuted === 'true',
+            triggeredAlarms: JSON.parse(localStorage.getItem(STORAGE_KEYS.TRIGGERED_ALARMS)) || {},
+            activeAlarmTaskId: null
+        };
+
+        // Ensure activePresetId always points to an existing preset
+        if (!state.presets[state.activePresetId]) {
+            const keys = Object.keys(state.presets);
+            state.activePresetId = keys.length > 0 ? keys[0] : null;
+        }
+
+        let presetFormMode = 'create'; // 'create' or 'rename'
+        let ytPlayer = null;
+        let ytApiReady = false;
+        let socialReelTimer = null;
+        let socialCountdown = 30;
+        let sharedAudioCtx = null;
+
+        // Migrate any legacy tasks that only had `time` to `startTime` and `endTime`
+        Object.keys(state.tasksByDate).forEach(dateKey => {
+            state.tasksByDate[dateKey] = (state.tasksByDate[dateKey] || []).map(task => {
+                const start = task.startTime || task.time || '08:00';
+                const end = task.endTime || addMinutesToTimeStr(start, 30);
+                return {
+                    ...task,
+                    startTime: start,
+                    endTime: end
+                };
+            });
+        });
+
+        // Seed initial sample tasks for today if empty
+        if (!state.tasksByDate[state.selectedDate]) {
+            state.tasksByDate[state.selectedDate] = [
+                { id: 't1', startTime: '07:00', endTime: '07:30', text: 'Hidratación + Estiramiento matutino', completed: true },
+                { id: 't2', startTime: '07:30', endTime: '08:15', text: 'Bloque de ejercicio con videos guiados', completed: false },
+                { id: 't3', startTime: '08:30', endTime: '10:00', text: 'Trabajo profundo con playlist de Spotify', completed: false }
+            ];
+            saveTasks();
+        }
+
+        /* =====================================================================
+           3. UTILITY FUNCTIONS (Dates, Toast, URL Parsers)
+           ===================================================================== */
+        function getTodayISO() {
+            const now = new Date();
+            const offset = now.getTimezoneOffset();
+            const local = new Date(now.getTime() - (offset * 60 * 1000));
+            return local.toISOString().split('T')[0];
+        }
+
+        function addMinutesToTimeStr(hhmm, minsToAdd) {
+            const [h, m] = (hhmm || '08:00').split(':').map(Number);
+            const total = (h * 60 + m + minsToAdd) % (24 * 60);
+            const newH = String(Math.floor(total / 60)).padStart(2, '0');
+            const newM = String(total % 60).padStart(2, '0');
+            return `${newH}:${newM}`;
+        }
+
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatSpanishDate(isoString) {
+            const [year, month, day] = isoString.split('-').map(Number);
+            const dateObj = new Date(year, month - 1, day);
+            return dateObj.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long'
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-box');
+            const label = document.getElementById('toast-message');
+            label.textContent = msg;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            clearTimeout(window._toastTimeout);
+            window._toastTimeout = setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 2600);
+        }
+
+        function parseVideoUrl(rawUrl) {
+            const url = rawUrl.trim();
+            // 1. YouTube (watch, youtu.be, shorts, embed)
+            const ytRegex = /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+            const ytMatch = url.match(ytRegex);
+            if (ytMatch && ytMatch[1]) {
+                return { platform: 'youtube', embedId: ytMatch[1], cleanUrl: url };
+            }
+
+            // 2. Instagram Reels / Posts
+            const igRegex = /instagram\.com\/(?:reel|p|tv)\/([a-zA-Z0-9_-]+)/;
+            const igMatch = url.match(igRegex);
+            if (igMatch && igMatch[1]) {
+                return { platform: 'instagram', embedId: igMatch[1], cleanUrl: url };
+            }
+
+            // 3. Facebook Reels / Videos
+            if (url.includes('facebook.com/') || url.includes('fb.watch/')) {
+                return { platform: 'facebook', embedId: encodeURIComponent(url), cleanUrl: url };
+            }
+
+            // 4. Direct MP4 / WebM
+            if (url.match(/\.(mp4|webm|ogg)(\?.*)?$/i)) {
+                return { platform: 'mp4', embedId: url, cleanUrl: url };
+            }
+
+            return null;
+        }
+
+        /* =====================================================================
+           4. SECTION 1: DAILY CALENDAR LOGIC + AUTOMATIC PRESET SYNC
+           ===================================================================== */
+        function saveTasks() {
+            localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(state.tasksByDate));
+        }
+
+        function getDayOfWeekFromISO(isoString) {
+            const [y, m, d] = isoString.split('-').map(Number);
+            return new Date(y, m - 1, d).getDay();
+        }
+
+        function syncPresetWithSelectedDate(notifyUser = false) {
+            if (!state.autoSwitchByDay) return false;
+            const dayOfWeek = getDayOfWeekFromISO(state.selectedDate);
+            const assignedPresetId = state.daySchedule[dayOfWeek];
+
+            if (assignedPresetId && state.presets[assignedPresetId] && assignedPresetId !== state.activePresetId) {
+                state.activePresetId = assignedPresetId;
+                state.currentVideoIndex = 0;
+                localStorage.setItem(STORAGE_KEYS.ACTIVE_PRESET, assignedPresetId);
+                updatePresetSelectorsUI();
+                loadCurrentVideo();
+                if (notifyUser) {
+                    const dayObj = DAYS_ORDERED_ES.find(d => d.dayIndex === dayOfWeek);
+                    showToast(`Rutina de ${dayObj ? dayObj.label : 'hoy'}: "${state.presets[assignedPresetId].name}"`);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        function renderCalendar() {
+            const picker = document.getElementById('date-picker');
+            picker.value = state.selectedDate;
+
+            const formatted = formatSpanishDate(state.selectedDate);
+            document.getElementById('header-date-label').textContent =
+                formatted.charAt(0).toUpperCase() + formatted.slice(1);
+
+            renderWeekStrip();
+            renderTasksForSelectedDate();
+            renderSurveyForSelectedDate();
+        }
+
+        function renderWeekStrip() {
+            const strip = document.getElementById('week-strip');
+            strip.innerHTML = '';
+
+            const [y, m, d] = state.selectedDate.split('-').map(Number);
+            const baseDate = new Date(y, m - 1, d);
+            const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const todayISO = getTodayISO();
+
+            // Render 7 days centered on selectedDate (-3 to +3)
+            for (let offset = -3; offset <= 3; offset++) {
+                const current = new Date(baseDate);
+                current.setDate(baseDate.getDate() + offset);
+
+                const iso = [
+                    current.getFullYear(),
+                    String(current.getMonth() + 1).padStart(2, '0'),
+                    String(current.getDate()).padStart(2, '0')
+                ].join('-');
+
+                const isSelected = iso === state.selectedDate;
+                const isToday = iso === todayISO;
+                const hasTasks = (state.tasksByDate[iso] || []).length > 0;
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.onclick = () => {
+                    state.selectedDate = iso;
+                    renderCalendar();
+                    syncPresetWithSelectedDate(true);
+                };
+
+                btn.className = `flex flex-col items-center justify-center py-1.5 rounded-xl border text-center transition ${
+                    isSelected
+                        ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/20'
+                        : isToday
+                            ? 'bg-zinc-950 border-indigo-500/40 text-indigo-300 hover:bg-zinc-800'
+                            : 'bg-zinc-950/60 border-zinc-800/80 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                }`;
+
+                btn.innerHTML = `
+                    <span class="text-[10px] font-medium uppercase">${dayNames[current.getDay()]}</span>
+                    <span class="text-xs font-bold mt-0.5">${current.getDate()}</span>
+                    <span class="w-1 h-1 rounded-full mt-0.5 ${hasTasks ? (isSelected ? 'bg-white' : 'bg-emerald-400') : 'bg-transparent'}"></span>
+                `;
+                strip.appendChild(btn);
+            }
+        }
+
+        function renderTasksForSelectedDate() {
+            const list = document.getElementById('daily-tasks-list');
+            const tasks = (state.tasksByDate[state.selectedDate] || []).sort((a, b) =>
+                (a.startTime || '00:00').localeCompare(b.startTime || '00:00')
+            );
+
+            if (tasks.length === 0) {
+                list.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center py-4 text-zinc-500">
+                        <p class="text-xs">No hay actividades programadas para este día.</p>
+                        <p class="text-[11px] text-zinc-600 mt-0.5">Define hora de inicio, hora de fin y agrega tu bloque arriba.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const now = new Date();
+            const todayISO = getTodayISO();
+            const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const isViewingToday = state.selectedDate === todayISO;
+
+            list.innerHTML = tasks.map(task => {
+                const start = task.startTime || '08:00';
+                const end = task.endTime || addMinutesToTimeStr(start, 30);
+                const isCurrentlyActive = isViewingToday && !task.completed && currentHHMM >= start && currentHHMM < end;
+
+                return `
+                <div class="group flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl border transition ${
+                    isCurrentlyActive
+                        ? 'bg-indigo-500/15 border-indigo-500/60 shadow-sm shadow-indigo-500/10'
+                        : 'bg-zinc-950/80 border-zinc-800/80 hover:border-zinc-700'
+                }">
+                    <button type="button" onclick="toggleTask('${task.id}')" class="flex items-center gap-2 flex-1 min-w-0 text-left">
+                        <span class="w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition ${
+                            task.completed
+                                ? 'bg-emerald-500 border-emerald-500 text-zinc-950'
+                                : isCurrentlyActive
+                                    ? 'border-indigo-400 bg-indigo-500/20'
+                                    : 'border-zinc-600 group-hover:border-indigo-400'
+                        }">
+                            ${task.completed ? '<i data-lucide="check" class="w-3 h-3 stroke-[3]"></i>' : ''}
+                        </span>
+                        <span class="text-[10px] sm:text-[11px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${
+                            isCurrentlyActive
+                                ? 'bg-indigo-600 text-white border-indigo-500 font-semibold'
+                                : 'bg-zinc-900 text-indigo-300 border-zinc-800'
+                        }">
+                            ${start} - ${end}
+                        </span>
+                        ${isCurrentlyActive ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">En curso</span>' : ''}
+                        <span class="text-xs truncate ${task.completed ? 'line-through text-zinc-500' : 'text-zinc-200'}">
+                            ${escapeHTML(task.text)}
+                        </span>
+                    </button>
+                    <button type="button" onclick="deleteTask('${task.id}')" title="Eliminar tarea"
+                            class="opacity-70 sm:opacity-0 group-hover:opacity-100 p-1 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-zinc-900 transition">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+        function addDailyTask(e) {
+            e.preventDefault();
+            const startInput = document.getElementById('task-start-input');
+            const endInput = document.getElementById('task-end-input');
+            const textInput = document.getElementById('task-text-input');
+            const text = textInput.value.trim();
+            if (!text) return;
+
+            const startTime = startInput.value || '08:00';
+            let endTime = endInput.value || addMinutesToTimeStr(startTime, 30);
+
+            if (endTime <= startTime) {
+                showToast('La hora de fin debe ser posterior a la hora de inicio');
+                return;
+            }
+
+            if (!state.tasksByDate[state.selectedDate]) {
+                state.tasksByDate[state.selectedDate] = [];
+            }
+
+            state.tasksByDate[state.selectedDate].push({
+                id: 'task_' + Date.now(),
+                startTime: startTime,
+                endTime: endTime,
+                text: text,
+                completed: false
+            });
+
+            // Advance suggested next start/end block for convenience
+            startInput.value = endTime;
+            endInput.value = addMinutesToTimeStr(endTime, 30);
+            textInput.value = '';
+
+            saveTasks();
+            renderCalendar();
+            showToast(`Actividad agregada (${startTime} - ${endTime})`);
+        }
+        function deleteTask(taskId) {
+            const tasks = state.tasksByDate[state.selectedDate] || [];
+            state.tasksByDate[state.selectedDate] = tasks.filter(t => t.id !== taskId);
+            saveTasks();
+            renderCalendar();
+        }
+
+        function toggleTask(taskId) {
+            const tasks = state.tasksByDate[state.selectedDate] || [];
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.completed = !task.completed;
+                saveTasks();
+                renderCalendar();
+            }
+        }
+
+        function changeDay(delta) {
+            const [y, m, d] = state.selectedDate.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            dateObj.setDate(dateObj.getDate() + delta);
+            state.selectedDate = [
+                dateObj.getFullYear(),
+                String(dateObj.getMonth() + 1).padStart(2, '0'),
+                String(dateObj.getDate()).padStart(2, '0')
+            ].join('-');
+            renderCalendar();
+            syncPresetWithSelectedDate(true);
+        }
+
+        function selectDateFromPicker(isoVal) {
+            if (!isoVal) return;
+            state.selectedDate = isoVal;
+            renderCalendar();
+            syncPresetWithSelectedDate(true);
+        }
+
+        function goToToday() {
+            state.selectedDate = getTodayISO();
+            renderCalendar();
+            syncPresetWithSelectedDate(true);
+        }
+
+        /* =====================================================================
+           4A. AUTOMATED TASK START & END ALARM ENGINE (Web Audio + Notifications)
+           ===================================================================== */
+        function unlockAudioContext() {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return null;
+            if (!sharedAudioCtx) {
+                sharedAudioCtx = new AudioContextClass();
+            }
+            if (sharedAudioCtx.state === 'suspended') {
+                sharedAudioCtx.resume().catch(() => {});
+            }
+            return sharedAudioCtx;
+        }
+
+        function requestBrowserNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().catch(() => {});
+            }
+        }
+
+        function updateAlarmSoundButtonUI() {
+            const btn = document.getElementById('alarm-sound-toggle-btn');
+            const icon = document.getElementById('alarm-sound-icon');
+            const label = document.getElementById('alarm-sound-label');
+            if (!btn || !icon || !label) return;
+
+            if (state.alarmMuted) {
+                btn.className = 'px-2 py-1 rounded-lg bg-zinc-900 text-zinc-400 hover:text-zinc-200 text-[11px] font-medium flex items-center gap-1 transition';
+                icon.setAttribute('data-lucide', 'bell-off');
+                label.textContent = 'Silenciado';
+            } else {
+                btn.className = 'px-2 py-1 rounded-lg bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 text-[11px] font-medium flex items-center gap-1 transition';
+                icon.setAttribute('data-lucide', 'bell-ring');
+                label.textContent = 'Alarmas ON';
+            }
+            lucide.createIcons();
+        }
+
+        function toggleAlarmSound() {
+            state.alarmMuted = !state.alarmMuted;
+            localStorage.setItem(STORAGE_KEYS.ALARM_MUTED, String(state.alarmMuted));
+            if (!state.alarmMuted) {
+                unlockAudioContext();
+                requestBrowserNotificationPermission();
+                showToast('Alarmas de inicio y fin activadas');
+            } else {
+                showToast('Sonido de alarmas silenciado');
+            }
+            updateAlarmSoundButtonUI();
+        }
+
+        function playAlarmChime(type) {
+            if (state.alarmMuted) return;
+            const ctx = unlockAudioContext();
+            if (!ctx) return;
+
+            try {
+                const now = ctx.currentTime;
+                // Ascending energetic triad for 'start'; warm resolving cadence for 'end'
+                const notes = type === 'start'
+                    ? [523.25, 659.25, 783.99, 1046.50] // C5 - E5 - G5 - C6
+                    : [783.99, 659.25, 587.33, 523.25]; // G5 - E5 - D5 - C5
+
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = type === 'start' ? 'triangle' : 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.16);
+
+                    gain.gain.setValueAtTime(0.001, now + idx * 0.16);
+                    gain.gain.exponentialRampToValueAtTime(0.22, now + idx * 0.16 + 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.16 + 0.42);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start(now + idx * 0.16);
+                    osc.stop(now + idx * 0.16 + 0.45);
+                });
+            } catch (err) {
+                // Ignore audio errors if browser blocks autoplay prior to user gesture
+            }
+        }
+
+        function sendSystemNotification(title, body) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    new Notification(title, {
+                        body: body,
+                        icon: 'https://placehold.co/192x192/10b981/ffffff?text=RD'
+                    });
+                } catch (e) {}
+            }
+        }
+
+        function showAlarmBanner({ type, taskId, taskTitle, startTime, endTime }) {
+            const banner = document.getElementById('alarm-banner');
+            const badge = document.getElementById('alarm-banner-badge');
+            const titleEl = document.getElementById('alarm-banner-title');
+            const subEl = document.getElementById('alarm-banner-subtitle');
+            const iconWrap = document.getElementById('alarm-banner-icon-wrap');
+            const completeBtn = document.getElementById('alarm-banner-complete-btn');
+
+            state.activeAlarmTaskId = taskId || null;
+
+            if (type === 'start') {
+                banner.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-md bg-zinc-900/95 backdrop-blur-xl border-2 border-indigo-500/80 text-zinc-100 p-3.5 rounded-2xl shadow-2xl shadow-indigo-500/20 transition-all';
+                badge.className = 'inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300';
+                badge.textContent = 'Inicio de tarea';
+                iconWrap.className = 'p-2 rounded-xl bg-indigo-500/20 text-indigo-400 shrink-0 mt-0.5';
+                titleEl.textContent = taskTitle;
+                subEl.textContent = `Es hora de comenzar (${startTime} - ${endTime})`;
+                completeBtn.classList.add('hidden');
+            } else {
+                banner.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-md bg-zinc-900/95 backdrop-blur-xl border-2 border-amber-500/80 text-zinc-100 p-3.5 rounded-2xl shadow-2xl shadow-amber-500/20 transition-all';
+                badge.className = 'inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300';
+                badge.textContent = 'Fin de tarea';
+                iconWrap.className = 'p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0 mt-0.5';
+                titleEl.textContent = taskTitle;
+                subEl.textContent = `Bloque finalizado (${startTime} - ${endTime})`;
+                if (taskId) {
+                    completeBtn.classList.remove('hidden');
+                } else {
+                    completeBtn.classList.add('hidden');
+                }
+            }
+
+            banner.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function dismissAlarmBanner() {
+            const banner = document.getElementById('alarm-banner');
+            if (banner) banner.classList.add('hidden');
+            state.activeAlarmTaskId = null;
+        }
+
+        function completeTaskFromAlarm() {
+            if (!state.activeAlarmTaskId) return;
+            const todayISO = getTodayISO();
+            const tasks = state.tasksByDate[todayISO] || [];
+            const target = tasks.find(t => t.id === state.activeAlarmTaskId);
+            if (target && !target.completed) {
+                target.completed = true;
+                saveTasks();
+                renderCalendar();
+                showToast(`Tarea "${target.text}" marcada como completada`);
+            }
+            dismissAlarmBanner();
+        }
+
+        function triggerTestAlarm() {
+            unlockAudioContext();
+            requestBrowserNotificationPermission();
+            playAlarmChime('start');
+            showAlarmBanner({
+                type: 'start',
+                taskId: null,
+                taskTitle: 'Prueba de Alarma de Rutina',
+                startTime: 'Ahora',
+                endTime: 'Activo'
+            });
+            sendSystemNotification('Prueba de Alarma - Rutina Diaria', 'El sonido y las notificaciones visuales están funcionando.');
+        }
+
+        function checkScheduledTaskAlarms() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            const currentHHMM = `${hh}:${mm}`;
+
+            // Update live digital clock in Calendar header
+            const clockEl = document.getElementById('live-clock-display');
+            if (clockEl) {
+                clockEl.textContent = `Hora actual: ${hh}:${mm}:${ss}`;
+            }
+
+            // Refresh active task highlight on minute boundary
+            if (ss === '00' && state.selectedDate === getTodayISO()) {
+                renderTasksForSelectedDate();
+            }
+
+            const todayISO = getTodayISO();
+            const todayTasks = state.tasksByDate[todayISO] || [];
+            let triggeredUpdated = false;
+
+            todayTasks.forEach(task => {
+                const start = task.startTime || task.time;
+                const end = task.endTime;
+
+                // 1. Check Start Time Alarm
+                if (start && currentHHMM === start && !task.completed) {
+                    const startEventKey = `${todayISO}_${task.id}_start_${start}`;
+                    if (!state.triggeredAlarms[startEventKey]) {
+                        state.triggeredAlarms[startEventKey] = true;
+                        triggeredUpdated = true;
+
+                        playAlarmChime('start');
+                        showAlarmBanner({
+                            type: 'start',
+                            taskId: task.id,
+                            taskTitle: task.text,
+                            startTime: start,
+                            endTime: end || ''
+                        });
+                        sendSystemNotification(`Inicio de tarea (${start})`, task.text);
+                    }
+                }
+
+                // 2. Check End Time Alarm
+                if (end && currentHHMM === end && !task.completed) {
+                    const endEventKey = `${todayISO}_${task.id}_end_${end}`;
+                    if (!state.triggeredAlarms[endEventKey]) {
+                        state.triggeredAlarms[endEventKey] = true;
+                        triggeredUpdated = true;
+
+                        playAlarmChime('end');
+                        showAlarmBanner({
+                            type: 'end',
+                            taskId: task.id,
+                            taskTitle: task.text,
+                            startTime: start || '',
+                            endTime: end
+                        });
+                        sendSystemNotification(`Fin de tarea (${end})`, `Concluyó el tiempo para: ${task.text}`);
+                    }
+                }
+            });
+
+            if (triggeredUpdated) {
+                localStorage.setItem(STORAGE_KEYS.TRIGGERED_ALARMS, JSON.stringify(state.triggeredAlarms));
+            }
+        }
+
+        /* =====================================================================
+           4B. SECTION 3: DAILY TASK COMPLETION SURVEY & STREAK LOGIC
+           ===================================================================== */
+        function saveSurveys() {
+            localStorage.setItem(STORAGE_KEYS.SURVEYS, JSON.stringify(state.surveysByDate));
+        }
+
+        function calculateCompletionStreak() {
+            let streak = 0;
+            const todayISO = getTodayISO();
+            const [y, m, d] = todayISO.split('-').map(Number);
+            let cursor = new Date(y, m - 1, d);
+
+            // If today is not marked 'yes' yet, check starting from yesterday so active streak stays visible
+            const todayEntry = state.surveysByDate[todayISO];
+            if (!todayEntry || todayEntry.status !== 'yes') {
+                cursor.setDate(cursor.getDate() - 1);
+            }
+
+            while (true) {
+                const iso = [
+                    cursor.getFullYear(),
+                    String(cursor.getMonth() + 1).padStart(2, '0'),
+                    String(cursor.getDate()).padStart(2, '0')
+                ].join('-');
+                const entry = state.surveysByDate[iso];
+                if (entry && entry.status === 'yes') {
+                    streak++;
+                    cursor.setDate(cursor.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            return streak;
+        }
+
+        function updateSurveyOptionButtonsUI(selectedStatus) {
+            const buttons = document.querySelectorAll('.survey-opt-btn');
+            buttons.forEach(btn => {
+                const st = btn.getAttribute('data-status');
+                const isSelected = st === selectedStatus;
+                btn.className = 'survey-opt-btn py-1.5 px-2 rounded-xl border text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1 transition ';
+
+                if (isSelected && st === 'yes') {
+                    btn.className += 'border-emerald-500 bg-emerald-500/20 text-emerald-200 shadow-sm shadow-emerald-500/10';
+                } else if (isSelected && st === 'partial') {
+                    btn.className += 'border-amber-500 bg-amber-500/20 text-amber-200 shadow-sm shadow-amber-500/10';
+                } else if (isSelected && st === 'no') {
+                    btn.className += 'border-rose-500 bg-rose-500/20 text-rose-200 shadow-sm shadow-rose-500/10';
+                } else {
+                    btn.className += 'border-zinc-800 bg-zinc-950/80 text-zinc-300 hover:border-zinc-700';
+                }
+            });
+        }
+
+        function selectSurveyStatus(status) {
+            state.currentDraftSurveyStatus = status;
+            updateSurveyOptionButtonsUI(status);
+        }
+
+        function renderSurveyForSelectedDate() {
+            const tasks = state.tasksByDate[state.selectedDate] || [];
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.completed).length;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            const summaryEl = document.getElementById('survey-sync-summary');
+            if (summaryEl) {
+                summaryEl.textContent = `Tareas completadas: ${completed} de ${total} (${pct}%)`;
+            }
+
+            const existing = state.surveysByDate[state.selectedDate];
+            const savedBadge = document.getElementById('survey-saved-indicator');
+            const noteInput = document.getElementById('survey-note-input');
+
+            if (existing) {
+                state.currentDraftSurveyStatus = existing.status;
+                updateSurveyOptionButtonsUI(existing.status);
+                if (noteInput) noteInput.value = existing.note || '';
+                if (savedBadge) savedBadge.classList.remove('hidden');
+            } else {
+                state.currentDraftSurveyStatus = null;
+                updateSurveyOptionButtonsUI(null);
+                if (noteInput) noteInput.value = '';
+                if (savedBadge) savedBadge.classList.add('hidden');
+            }
+
+            const streakEl = document.getElementById('survey-streak-count');
+            if (streakEl) {
+                streakEl.textContent = String(calculateCompletionStreak());
+            }
+        }
+
+        function saveDailySurvey(e) {
+            e.preventDefault();
+            if (!state.currentDraftSurveyStatus) {
+                showToast('Selecciona una opción de cumplimiento antes de guardar');
+                return;
+            }
+            const noteVal = document.getElementById('survey-note-input').value.trim();
+            state.surveysByDate[state.selectedDate] = {
+                status: state.currentDraftSurveyStatus,
+                note: noteVal,
+                updatedAt: new Date().toISOString()
+            };
+            saveSurveys();
+            renderSurveyForSelectedDate();
+            showToast('Evaluación del día guardada');
+        }
+
+        /* =====================================================================
+           5. SECTION 2: SPOTIFY PLAYLIST EMBED & DEEP LINK
+           ===================================================================== */
+        function toggleSpotifyInput() {
+            const form = document.getElementById('spotify-url-form');
+            const input = document.getElementById('spotify-url-input');
+            form.classList.toggle('hidden');
+            if (!form.classList.contains('hidden')) {
+                input.value = state.spotifyPlaylistUrl;
+                input.focus();
+            }
+        }
+
+        function saveSpotifyPlaylist() {
+            const raw = document.getElementById('spotify-url-input').value.trim();
+            if (!raw) return;
+            applySpotifyPlaylist(raw);
+            document.getElementById('spotify-url-form').classList.add('hidden');
+            showToast('Playlist de Spotify actualizada');
+        }
+
+        function applySpotifyPlaylist(url) {
+            state.spotifyPlaylistUrl = url;
+            localStorage.setItem(STORAGE_KEYS.SPOTIFY, url);
+
+            const extBtn = document.getElementById('spotify-external-btn');
+            if (extBtn) extBtn.href = url;
+
+            const iframe = document.getElementById('spotify-embed-iframe');
+            if (iframe) {
+                const match = url.match(/open\.spotify\.com\/(playlist|album|track|show|episode)\/([a-zA-Z0-9]+)/);
+                if (match) {
+                    iframe.src = `https://open.spotify.com/embed/${match[1]}/${match[2]}?utm_source=generator&theme=0`;
+                }
+            }
+        }
+
+        /* =====================================================================
+           6. RIGHT HALF: PRESET PLAYLISTS, DAY ASSIGNMENT & AUTO-ADVANCE PLAYER
+           ===================================================================== */
+        function savePresetsAndSchedule() {
+            localStorage.setItem(STORAGE_KEYS.PRESETS, JSON.stringify(state.presets));
+            localStorage.setItem(STORAGE_KEYS.DAY_SCHEDULE, JSON.stringify(state.daySchedule));
+            localStorage.setItem(STORAGE_KEYS.ACTIVE_PRESET, state.activePresetId || '');
+            localStorage.setItem(STORAGE_KEYS.AUTO_SWITCH_DAY, String(state.autoSwitchByDay));
+        }
+
+        function getActivePreset() {
+            return state.presets[state.activePresetId] || null;
+        }
+
+        function getActiveVideos() {
+            const preset = getActivePreset();
+            return preset ? (preset.videos || []) : [];
+        }
+
+        function updatePresetSelectorsUI() {
+            const presetList = Object.values(state.presets);
+            const active = getActivePreset();
+            const videos = getActiveVideos();
+
+            const nameEl = document.getElementById('active-preset-name');
+            if (nameEl) nameEl.textContent = active ? active.name : 'Sin lista';
+
+            const countEl = document.getElementById('queue-count');
+            if (countEl) countEl.textContent = String(videos.length);
+
+            const optionsHtml = presetList.map(p =>
+                `<option value="${p.id}" ${p.id === state.activePresetId ? 'selected' : ''}>${escapeHTML(p.name)}</option>`
+            ).join('');
+
+            const quickSelect = document.getElementById('quick-preset-select');
+            if (quickSelect) quickSelect.innerHTML = optionsHtml;
+
+            const drawerSelect = document.getElementById('drawer-preset-select');
+            if (drawerSelect) drawerSelect.innerHTML = optionsHtml;
+
+            const autoDayToggle = document.getElementById('auto-switch-by-day-toggle');
+            if (autoDayToggle) autoDayToggle.checked = state.autoSwitchByDay;
+
+            renderVideoQueueList();
+            renderDayScheduleList();
+        }
+
+        function selectPresetManually(presetId) {
+            if (!state.presets[presetId]) return;
+            state.activePresetId = presetId;
+            state.currentVideoIndex = 0;
+            savePresetsAndSchedule();
+            updatePresetSelectorsUI();
+            loadCurrentVideo();
+        }
+
+        function toggleQueueDrawer() {
+            const drawer = document.getElementById('queue-drawer');
+            drawer.classList.toggle('hidden');
+            if (!drawer.classList.contains('hidden')) {
+                updatePresetSelectorsUI();
+                lucide.createIcons();
+            }
+        }
+
+        function switchDrawerTab(tabName) {
+            const tabVideos = document.getElementById('drawer-tab-videos');
+            const tabSchedule = document.getElementById('drawer-tab-schedule');
+            const btnVideos = document.getElementById('tab-btn-videos');
+            const btnSchedule = document.getElementById('tab-btn-schedule');
+
+            if (tabName === 'videos') {
+                tabVideos.classList.remove('hidden');
+                tabSchedule.classList.add('hidden');
+                btnVideos.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 bg-zinc-800 text-white transition';
+                btnSchedule.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition';
+            } else {
+                tabVideos.classList.add('hidden');
+                tabSchedule.classList.remove('hidden');
+                btnSchedule.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 bg-zinc-800 text-white transition';
+                btnVideos.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition';
+                renderDayScheduleList();
+            }
+        }
+
+        function openPresetActionForm(mode) {
+            presetFormMode = mode;
+            const form = document.getElementById('preset-name-form');
+            const input = document.getElementById('preset-name-input');
+            const submitBtn = document.getElementById('preset-name-submit-btn');
+            const active = getActivePreset();
+
+            form.classList.remove('hidden');
+            if (mode === 'rename' && active) {
+                input.value = active.name;
+                submitBtn.textContent = 'Renombrar';
+            } else {
+                input.value = '';
+                submitBtn.textContent = 'Crear';
+            }
+            input.focus();
+        }
+
+        function closePresetActionForm() {
+            document.getElementById('preset-name-form').classList.add('hidden');
+        }
+
+        function submitPresetNameForm(e) {
+            e.preventDefault();
+            const input = document.getElementById('preset-name-input');
+            const name = input.value.trim();
+            if (!name) return;
+
+            if (presetFormMode === 'rename') {
+                const active = getActivePreset();
+                if (active) {
+                    active.name = name;
+                    showToast('Lista renombrada');
+                }
+            } else {
+                const newId = 'preset_' + Date.now();
+                state.presets[newId] = {
+                    id: newId,
+                    name: name,
+                    videos: []
+                };
+                state.activePresetId = newId;
+                state.currentVideoIndex = 0;
+                showToast(`Lista "${name}" creada`);
+            }
+
+            closePresetActionForm();
+            savePresetsAndSchedule();
+            updatePresetSelectorsUI();
+            loadCurrentVideo();
+        }
+
+        function deleteCurrentPreset() {
+            const keys = Object.keys(state.presets);
+            if (keys.length <= 1) {
+                showToast('Debe existir al menos una lista predeterminada');
+                return;
+            }
+            const deletedId = state.activePresetId;
+            delete state.presets[deletedId];
+            const remainingKeys = Object.keys(state.presets);
+            state.activePresetId = remainingKeys[0];
+            state.currentVideoIndex = 0;
+
+            // Reassign any day that pointed to deletedId
+            Object.keys(state.daySchedule).forEach(dayKey => {
+                if (state.daySchedule[dayKey] === deletedId) {
+                    state.daySchedule[dayKey] = state.activePresetId;
+                }
+            });
+
+            savePresetsAndSchedule();
+            updatePresetSelectorsUI();
+            loadCurrentVideo();
+            showToast('Lista eliminada');
+        }
+
+        function toggleAutoSwitchByDay(enabled) {
+            state.autoSwitchByDay = enabled;
+            savePresetsAndSchedule();
+            if (enabled) {
+                syncPresetWithSelectedDate(true);
+            } else {
+                showToast('Cambio automático por día desactivado');
+            }
+        }
+
+        function assignPresetToDay(dayIndex, presetId) {
+            state.daySchedule[dayIndex] = presetId;
+            savePresetsAndSchedule();
+            if (state.autoSwitchByDay && getDayOfWeekFromISO(state.selectedDate) === Number(dayIndex)) {
+                syncPresetWithSelectedDate(false);
+            }
+            showToast('Asignación semanal actualizada');
+        }
+
+        function renderDayScheduleList() {
+            const container = document.getElementById('day-schedule-list');
+            if (!container) return;
+            const presetList = Object.values(state.presets);
+
+            container.innerHTML = DAYS_ORDERED_ES.map(day => {
+                const assignedId = state.daySchedule[day.dayIndex] || state.activePresetId;
+                const opts = presetList.map(p =>
+                    `<option value="${p.id}" ${p.id === assignedId ? 'selected' : ''}>${escapeHTML(p.name)}</option>`
+                ).join('');
+
+                return `
+                    <div class="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-zinc-950 border border-zinc-800">
+                        <span class="text-xs font-semibold text-zinc-200">${day.label}</span>
+                        <select onchange="assignPresetToDay(${day.dayIndex}, this.value)"
+                                class="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-indigo-500 max-w-[200px] truncate">
+                            ${opts}
+                        </select>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function addVideoToQueue(e) {
+            e.preventDefault();
+            const titleInput = document.getElementById('new-video-title');
+            const urlInput = document.getElementById('new-video-url');
+            const title = titleInput.value.trim();
+            const parsed = parseVideoUrl(urlInput.value);
+
+            if (!parsed) {
+                showToast('Enlace no reconocido. Usa YouTube, Instagram Reel, Facebook Reel o MP4');
+                return;
+            }
+
+            const active = getActivePreset();
+            if (!active) return;
+
+            active.videos.push({
+                id: 'vid_' + Date.now(),
+                title: title,
+                url: parsed.cleanUrl,
+                platform: parsed.platform,
+                embedId: parsed.embedId
+            });
+
+            titleInput.value = '';
+            urlInput.value = '';
+
+            savePresetsAndSchedule();
+            updatePresetSelectorsUI();
+            if (active.videos.length === 1) {
+                state.currentVideoIndex = 0;
+                loadCurrentVideo();
+            }
+            showToast('Video agregado a la lista');
+        }
+
+        function removeVideoFromQueue(videoId) {
+            const active = getActivePreset();
+            if (!active) return;
+
+            active.videos = active.videos.filter(v => v.id !== videoId);
+            if (state.currentVideoIndex >= active.videos.length) {
+                state.currentVideoIndex = Math.max(0, active.videos.length - 1);
+            }
+
+            savePresetsAndSchedule();
+            updatePresetSelectorsUI();
+            loadCurrentVideo();
+            showToast('Video eliminado');
+        }
+
+        function playSpecificVideo(index) {
+            state.currentVideoIndex = index;
+            loadCurrentVideo();
+            toggleQueueDrawer();
+        }
+
+        function renderVideoQueueList() {
+            const container = document.getElementById('video-queue-list');
+            if (!container) return;
+            const videos = getActiveVideos();
+
+            if (videos.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-zinc-500 text-xs">
+                        Esta lista aún no tiene videos. Agrega uno arriba.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = videos.map((vid, idx) => {
+                const isPlaying = idx === state.currentVideoIndex;
+                return `
+                    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl border transition ${
+                        isPlaying
+                            ? 'bg-emerald-500/10 border-emerald-500/50'
+                            : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
+                    }">
+                        <button type="button" onclick="playSpecificVideo(${idx})" class="flex items-center gap-2.5 flex-1 min-w-0 text-left">
+                            <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
+                                isPlaying ? 'bg-emerald-500 text-zinc-950' : 'bg-zinc-800 text-zinc-300'
+                            }">
+                                ${idx + 1}
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-zinc-100 truncate">${escapeHTML(vid.title)}</p>
+                                <p class="text-[10px] text-zinc-400 uppercase mt-0.5">${escapeHTML(vid.platform)}</p>
+                            </div>
+                        </button>
+                        <button type="button" onclick="removeVideoFromQueue('${vid.id}')" title="Quitar de la lista"
+                                class="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-zinc-900 transition">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function toggleAutoAdvance(enabled) {
+            state.autoAdvance = enabled;
+            showToast(enabled ? 'Avance automático activado' : 'Avance automático pausado');
+        }
+
+        function playNextVideo() {
+            const videos = getActiveVideos();
+            if (videos.length === 0) return;
+            state.currentVideoIndex = (state.currentVideoIndex + 1) % videos.length;
+            loadCurrentVideo();
+        }
+
+        function playPreviousVideo() {
+            const videos = getActiveVideos();
+            if (videos.length === 0) return;
+            state.currentVideoIndex = (state.currentVideoIndex - 1 + videos.length) % videos.length;
+            loadCurrentVideo();
+        }
+
+        function clearSocialReelTimer() {
+            if (socialReelTimer) {
+                clearInterval(socialReelTimer);
+                socialReelTimer = null;
+            }
+            const helper = document.getElementById('social-reel-helper');
+            if (helper) helper.classList.add('hidden');
+        }
+
+        function startSocialReelCountdown(externalUrl) {
+            clearSocialReelTimer();
+            const helper = document.getElementById('social-reel-helper');
+            const countdownText = document.getElementById('social-countdown-text');
+            const extLink = document.getElementById('reel-external-link');
+
+            socialCountdown = 30;
+            if (countdownText) countdownText.textContent = `${socialCountdown}s`;
+            if (extLink) extLink.href = externalUrl;
+            if (helper) helper.classList.remove('hidden');
+
+            socialReelTimer = setInterval(() => {
+                if (!state.autoAdvance) return;
+                socialCountdown--;
+                if (countdownText) countdownText.textContent = `${socialCountdown}s`;
+                if (socialCountdown <= 0) {
+                    clearSocialReelTimer();
+                    playNextVideo();
+                }
+            }, 1000);
+        }
+
+        window.onYouTubeIframeAPIReady = function() {
+            ytApiReady = true;
+            loadCurrentVideo();
+        };
+
+        function loadCurrentVideo() {
+            clearSocialReelTimer();
+            const videos = getActiveVideos();
+            const stage = document.getElementById('video-stage');
+            const titleEl = document.getElementById('current-video-title');
+            const counterBadge = document.getElementById('video-counter-badge');
+            const platformBadge = document.getElementById('video-platform-badge');
+
+            if (videos.length === 0) {
+                titleEl.textContent = 'Sin videos en esta lista';
+                counterBadge.textContent = 'Video 0 de 0';
+                platformBadge.textContent = 'Vacío';
+                stage.innerHTML = `
+                    <div class="text-center p-6 text-zinc-400">
+                        <p class="text-sm font-medium">No hay videos asignados a esta rutina.</p>
+                        <p class="text-xs text-zinc-500 mt-1">Pulsa "Lista" arriba a la derecha para agregar enlaces.</p>
+                    </div>
+                `;
+                renderVideoQueueList();
+                return;
+            }
+
+            if (state.currentVideoIndex >= videos.length) {
+                state.currentVideoIndex = 0;
+            }
+
+            const video = videos[state.currentVideoIndex];
+            titleEl.textContent = video.title;
+            counterBadge.textContent = `Video ${state.currentVideoIndex + 1} de ${videos.length}`;
+            platformBadge.textContent = video.platform.toUpperCase();
+            renderVideoQueueList();
+
+            if (ytPlayer && typeof ytPlayer.destroy === 'function') {
+                try { ytPlayer.destroy(); } catch (e) {}
+                ytPlayer = null;
+            }
+
+            if (video.platform === 'youtube') {
+                stage.innerHTML = '<div id="yt-player-mount" class="w-full h-full"></div>';
+                if (window.YT && window.YT.Player) {
+                    ytPlayer = new YT.Player('yt-player-mount', {
+                        videoId: video.embedId,
+                        playerVars: {
+                            autoplay: 1,
+                            rel: 0,
+                            modestbranding: 1,
+                            playsinline: 1
+                        },
+                        events: {
+                            onStateChange: (event) => {
+                                if (event.data === YT.PlayerState.ENDED && state.autoAdvance) {
+                                    playNextVideo();
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    stage.innerHTML = `
+                        <iframe src="https://www.youtube.com/embed/${video.embedId}?autoplay=1&rel=0&playsinline=1"
+                                allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+                    `;
+                }
+            } else if (video.platform === 'instagram') {
+                stage.innerHTML = `
+                    <iframe src="https://www.instagram.com/reel/${video.embedId}/embed"
+                            allowtransparency="true" allowfullscreen="true"></iframe>
+                `;
+                startSocialReelCountdown(video.url);
+            } else if (video.platform === 'facebook') {
+                stage.innerHTML = `
+                    <iframe src="https://www.facebook.com/plugins/video.php?href=${video.embedId}&show_text=false&autoplay=true"
+                            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" allowfullscreen="true"></iframe>
+                `;
+                startSocialReelCountdown(video.url);
+            } else if (video.platform === 'mp4') {
+                stage.innerHTML = `
+                    <video id="native-mp4-player" src="${escapeHTML(video.embedId)}" controls autoplay playsinline class="w-full h-full object-contain bg-black"></video>
+                `;
+                const vidEl = document.getElementById('native-mp4-player');
+                if (vidEl) {
+                    vidEl.onended = () => {
+                        if (state.autoAdvance) playNextVideo();
+                    };
+                }
+            }
+        }
+
+        /* =====================================================================
+           7. INITIALIZATION ON LOAD
+           ===================================================================== */
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            updateAlarmSoundButtonUI();
+            renderCalendar();
+            applySpotifyPlaylist(state.spotifyPlaylistUrl);
+
+            // Unlock Web Audio on first user interaction anywhere in the app
+            document.body.addEventListener('pointerdown', () => {
+                if (!state.alarmMuted) unlockAudioContext();
+            }, { once: true });
+
+            // Start 1-second real-time clock & automated task start/end alarm monitor
+            checkScheduledTaskAlarms();
+            setInterval(checkScheduledTaskAlarms, 1000);
+
+            // Sync preset automatically with today's day of week if enabled
+            if (state.autoSwitchByDay) {
+                const todayDow = getDayOfWeekFromISO(state.selectedDate);
+                const assignedId = state.daySchedule[todayDow];
+                if (assignedId && state.presets[assignedId]) {
+                    state.activePresetId = assignedId;
+                    localStorage.setItem(STORAGE_KEYS.ACTIVE_PRESET, assignedId);
+                }
+            }
+            updatePresetSelectorsUI();
+
+            // If YouTube API already initialized before DOMContentLoaded, load video immediately
+            if (window.YT && window.YT.Player) {
+                ytApiReady = true;
+                loadCurrentVideo();
+            } else {
+                // Fallback timer in case offline or YT script delayed
+                setTimeout(() => {
+                    if (!ytPlayer && getActiveVideos().length > 0) {
+                        loadCurrentVideo();
+                    }
+                }, 1200);
+            }
+        });
+    </script>
+</body>
+</html>
