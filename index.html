@@ -194,7 +194,7 @@
                             <i data-lucide="link" class="w-3.5 h-3.5"></i>
                             <span class="hidden sm:inline">Cambiar Playlist</span>
                         </button>
-                        <a id="spotify-external-btn" href="https://open.spotify.com/playlist/37i9dQZF1DX8NTLI2TtZa6" target="_blank" rel="noopener noreferrer"
+                        <a id="spotify-external-btn" href="https://open.spotify.com/artist/1585BKSPNL4Ydw2P2LUjO4?si=3MGwqg9MRUaDP2HQn8GXkQ&utm_source=copy-link" target="_blank" rel="noopener noreferrer"
                            class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#1DB954]/20 transition">
                             <span>Abrir en Spotify</span>
                             <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
@@ -205,9 +205,30 @@
                 <!-- Collapsible URL Input Bar for User's Spotify Playlist -->
                 <div id="spotify-url-form" class="hidden mb-2 shrink-0">
                     <div class="flex items-center gap-1.5">
-                        <input type="url" id="spotify-url-input" placeholder="Pega aquí el enlace de tu playlist de Spotify..."
+                        <select id="spotify-saved-select" onchange="selectSavedSpotifyItem(this.value)" title="Cambiar entre tus listas o podcasts guardados"
+                                class="bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs font-medium rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-[#1DB954] max-w-[135px] sm:max-w-[170px] truncate cursor-pointer">
+                            <!-- Populated via JS -->
+                        </select>
+                        <button onclick="toggleSpotifyInput()" class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Agregar nuevo enlace de Spotify">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span class="hidden sm:inline">Agregar</span>
+                        </button>
+                        <a id="spotify-external-btn" href="https://open.spotify.com/artist/1585BKSPNL4Ydw2P2LUjO4?si=3MGwqg9MRUaDP2HQn8GXkQ&utm_source=copy-link" target="_blank" rel="noopener noreferrer"
+                           class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#1DB954]/20 transition">
+                            <span>Abrir en Spotify</span>
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Collapsible URL Input Bar for User's Spotify Playlist / Show -->
+                <div id="spotify-url-form" class="hidden mb-2 shrink-0">
+                    <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5">
+                        <input type="text" id="spotify-name-input" placeholder="Nombre (ej. Podcast Enfoque)"
+                               class="w-full sm:w-40 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-[#1DB954]">
+                        <input type="url" id="spotify-url-input" placeholder="Pega aquí el enlace de playlist, artista o podcast..."
                                class="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-[#1DB954]">
-                        <button onclick="saveSpotifyPlaylist()" class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-semibold transition">
+                        <button onclick="saveSpotifyPlaylist()" class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-semibold transition shrink-0">
                             Guardar
                         </button>
                     </div>
@@ -216,7 +237,7 @@
                 <!-- Official Spotify Embed Player -->
                 <div class="flex-1 w-full rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800/80 min-h-[152px]">
                     <iframe id="spotify-embed-iframe"
-                            src="https://open.spotify.com/artist/1585BKSPNL4Ydw2P2LUjO4?si=3MGwqg9MRUaDP2HQn8GXkQ&utm_source=copy-link"
+                            src="https://open.spotify.com/embed/artist/1585BKSPNL4Ydw2P2LUjO4?utm_source=generator&theme=0"
                             width="100%"
                             height="100%"
                             frameborder="0"
@@ -755,6 +776,7 @@
             ACTIVE_PRESET: 'rutina_pwa_active_preset_v2',
             AUTO_SWITCH_DAY: 'rutina_pwa_auto_switch_day_v2',
             SPOTIFY: 'rutina_pwa_spotify_v1',
+            SPOTIFY_LIST: 'rutina_pwa_spotify_list_v1',
             SURVEYS: 'rutina_pwa_daily_surveys_v1',
             TRIGGERED_ALARMS: 'rutina_pwa_triggered_alarms_v1',
             ALARM_MUTED: 'rutina_pwa_alarm_muted_v1',
@@ -856,6 +878,41 @@
         const savedAutoSwitch = localStorage.getItem(STORAGE_KEYS.AUTO_SWITCH_DAY);
         const savedAlarmMuted = localStorage.getItem(STORAGE_KEYS.ALARM_MUTED);
 
+        const DEFAULT_SPOTIFY_ITEMS = [
+            {
+                id: 'sp_default_1',
+                name: 'Artista Predeterminado',
+                url: 'https://open.spotify.com/artist/1585BKSPNL4Ydw2P2LUjO4?si=3MGwqg9MRUaDP2HQn8GXkQ&utm_source=copy-link'
+            },
+            {
+                id: 'sp_default_2',
+                name: 'Podcast / Show Nuevo',
+                url: 'https://open.spotify.com/show/3UtuoTVTzBUQqIblcSMv6p?si=xukV-1O6SAiD3lW2X2DXWQ&utm_source=copy-link'
+            }
+        ];
+
+        function loadInitialSpotifyItems() {
+            const storedList = JSON.parse(localStorage.getItem(STORAGE_KEYS.SPOTIFY_LIST));
+            if (Array.isArray(storedList) && storedList.length > 0) {
+                // Ensure both default items are present if not already added
+                DEFAULT_SPOTIFY_ITEMS.forEach(defItem => {
+                    const exists = storedList.some(item => item.url && item.url.split('?')[0] === defItem.url.split('?')[0]);
+                    if (!exists) {
+                        storedList.push(defItem);
+                    }
+                });
+                return storedList;
+            }
+            const legacyUrl = localStorage.getItem(STORAGE_KEYS.SPOTIFY);
+            const list = [...DEFAULT_SPOTIFY_ITEMS];
+            if (legacyUrl && !list.some(item => item.url.split('?')[0] === legacyUrl.split('?')[0])) {
+                list.unshift({ id: 'sp_legacy', name: 'Mi Playlist Guardada', url: legacyUrl });
+            }
+            return list;
+        }
+
+        const initialSpotifyItems = loadInitialSpotifyItems();
+
         let state = {
             selectedDate: getTodayISO(),
             tasksByDate: JSON.parse(localStorage.getItem(STORAGE_KEYS.TASKS)) || {},
@@ -869,7 +926,8 @@
             autoSwitchByDay: savedAutoSwitch === null ? true : savedAutoSwitch === 'true',
             currentVideoIndex: 0,
             autoAdvance: true,
-            spotifyPlaylistUrl: localStorage.getItem(STORAGE_KEYS.SPOTIFY) || 'https://open.spotify.com/artist/1585BKSPNL4Ydw2P2LUjO4?si=3MGwqg9MRUaDP2HQn8GXkQ&utm_source=copy-link',
+            spotifyItems: initialSpotifyItems,
+            spotifyPlaylistUrl: localStorage.getItem(STORAGE_KEYS.SPOTIFY) || initialSpotifyItems[0].url,
             alarmMuted: savedAlarmMuted === 'true',
             triggeredAlarms: JSON.parse(localStorage.getItem(STORAGE_KEYS.TRIGGERED_ALARMS)) || {},
             activeAlarmTaskId: null,
@@ -2017,6 +2075,7 @@
                 daySchedule: state.daySchedule,
                 activePresetId: state.activePresetId,
                 autoSwitchByDay: state.autoSwitchByDay,
+                spotifyItems: state.spotifyItems,
                 spotifyPlaylistUrl: state.spotifyPlaylistUrl
             };
         }
@@ -2034,6 +2093,10 @@
             if (typeof data.autoSwitchByDay === 'boolean') {
                 state.autoSwitchByDay = data.autoSwitchByDay;
             }
+            if (Array.isArray(data.spotifyItems) && data.spotifyItems.length > 0) {
+                state.spotifyItems = data.spotifyItems;
+                localStorage.setItem(STORAGE_KEYS.SPOTIFY_LIST, JSON.stringify(state.spotifyItems));
+            }
             if (data.spotifyPlaylistUrl) {
                 state.spotifyPlaylistUrl = data.spotifyPlaylistUrl;
             }
@@ -2041,6 +2104,7 @@
             saveTasks();
             saveSurveys();
             savePresetsAndSchedule();
+            renderSpotifySelector();
             applySpotifyPlaylist(state.spotifyPlaylistUrl);
             renderCalendar();
             updatePresetSelectorsUI();
@@ -2144,34 +2208,81 @@
         /* =====================================================================
            5. SECTION 2: SPOTIFY PLAYLIST EMBED & DEEP LINK
            ===================================================================== */
+        function saveSpotifyItemsList() {
+            localStorage.setItem(STORAGE_KEYS.SPOTIFY_LIST, JSON.stringify(state.spotifyItems));
+        }
+
+        function renderSpotifySelector() {
+            const select = document.getElementById('spotify-saved-select');
+            if (!select) return;
+
+            const activeBaseUrl = (state.spotifyPlaylistUrl || '').split('?')[0];
+            select.innerHTML = state.spotifyItems.map(item => {
+                const isSelected = item.url.split('?')[0] === activeBaseUrl;
+                return `<option value="${item.id}" ${isSelected ? 'selected' : ''}>${escapeHTML(item.name)}</option>`;
+            }).join('');
+        }
+
+        function selectSavedSpotifyItem(itemId) {
+            const found = state.spotifyItems.find(i => i.id === itemId);
+            if (!found) return;
+            applySpotifyPlaylist(found.url);
+            showToast(`Reproduciendo: ${found.name}`);
+        }
+
         function toggleSpotifyInput() {
             const form = document.getElementById('spotify-url-form');
-            const input = document.getElementById('spotify-url-input');
+            const nameInput = document.getElementById('spotify-name-input');
+            const urlInput = document.getElementById('spotify-url-input');
             form.classList.toggle('hidden');
             if (!form.classList.contains('hidden')) {
-                input.value = state.spotifyPlaylistUrl;
-                input.focus();
+                if (nameInput) nameInput.value = '';
+                urlInput.value = '';
+                if (nameInput) nameInput.focus();
+                else urlInput.focus();
             }
         }
 
         function saveSpotifyPlaylist() {
-            const raw = document.getElementById('spotify-url-input').value.trim();
-            if (!raw) return;
-            applySpotifyPlaylist(raw);
+            const nameInput = document.getElementById('spotify-name-input');
+            const rawUrl = document.getElementById('spotify-url-input').value.trim();
+            if (!rawUrl) return;
+
+            const customName = (nameInput ? nameInput.value.trim() : '') || `Lista Spotify ${state.spotifyItems.length + 1}`;
+            const baseUrl = rawUrl.split('?')[0];
+            const existing = state.spotifyItems.find(i => i.url.split('?')[0] === baseUrl);
+
+            if (existing) {
+                existing.url = rawUrl;
+                if (nameInput && nameInput.value.trim()) {
+                    existing.name = nameInput.value.trim();
+                }
+            } else {
+                state.spotifyItems.push({
+                    id: 'sp_' + Date.now(),
+                    name: customName,
+                    url: rawUrl
+                });
+            }
+
+            saveSpotifyItemsList();
+            applySpotifyPlaylist(rawUrl);
+            renderSpotifySelector();
             document.getElementById('spotify-url-form').classList.add('hidden');
-            showToast('Playlist de Spotify actualizada');
+            showToast(`"${customName}" guardada en Spotify`);
         }
 
         function applySpotifyPlaylist(url) {
             state.spotifyPlaylistUrl = url;
             localStorage.setItem(STORAGE_KEYS.SPOTIFY, url);
+            renderSpotifySelector();
 
             const extBtn = document.getElementById('spotify-external-btn');
             if (extBtn) extBtn.href = url;
 
             const iframe = document.getElementById('spotify-embed-iframe');
             if (iframe) {
-                const match = url.match(/open\.spotify\.com\/(playlist|album|track|show|episode)\/([a-zA-Z0-9]+)/);
+                const match = url.match(/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(playlist|album|track|artist|show|episode)\/([a-zA-Z0-9]+)/);
                 if (match) {
                     iframe.src = `https://open.spotify.com/embed/${match[1]}/${match[2]}?utm_source=generator&theme=0`;
                 }
@@ -2630,6 +2741,8 @@
             lucide.createIcons();
             updateAlarmSoundButtonUI();
             renderCalendar();
+            saveSpotifyItemsList();
+            renderSpotifySelector();
             applySpotifyPlaylist(state.spotifyPlaylistUrl);
 
             // Unlock Web Audio on first user interaction anywhere in the app
