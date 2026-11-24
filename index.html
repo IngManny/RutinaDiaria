@@ -160,6 +160,7 @@
                     <select id="task-video-preset-select" title="Lista de videos a reproducir al iniciar esta tarea"
                             class="bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-emerald-300 focus:outline-none focus:border-emerald-500 cursor-pointer shrink-0 max-w-[165px] truncate">
                         <option value="">Sin video (solo alarma)</option>
+                        <option value="alarm_weekdays_maintenance">Lun - Vie (mantenimiento)</option>
                     </select>
                     <select id="task-repeat-select" title="Frecuencia de repetición"
                             class="bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 cursor-pointer shrink-0">
@@ -907,12 +908,6 @@
         function loadInitialSpotifyItems() {
             const storedList = JSON.parse(localStorage.getItem(STORAGE_KEYS.SPOTIFY_LIST));
             if (Array.isArray(storedList) && storedList.length > 0) {
-                DEFAULT_SPOTIFY_ITEMS.forEach(defItem => {
-                    const exists = storedList.some(item => item.url && item.url.split('?')[0] === defItem.url.split('?')[0]);
-                    if (!exists) {
-                        storedList.push(defItem);
-                    }
-                });
                 return storedList;
             }
             const legacyUrl = localStorage.getItem(STORAGE_KEYS.SPOTIFY);
@@ -1186,6 +1181,7 @@
                 if (state.editingTaskId === task.id) {
                     const presetOptionsHtml = [
                         `<option value="">Sin video (solo alarma)</option>`,
+                        `<option value="alarm_weekdays_maintenance" ${task.videoPresetId === 'alarm_weekdays_maintenance' ? 'selected' : ''}>Lun - Vie (mantenimiento)</option>`,
                         ...Object.values(state.presets).map(p =>
                             `<option value="${p.id}" ${p.id === task.videoPresetId ? 'selected' : ''}>▶ ${escapeHTML(p.name)}</option>`
                         )
@@ -2388,21 +2384,56 @@
             if (!pillsContainer) return;
 
             const activeBaseUrl = (state.spotifyPlaylistUrl || '').split('?')[0];
+            const canDelete = state.spotifyItems.length > 1;
+
             pillsContainer.innerHTML = state.spotifyItems.map(item => {
                 const isSelected = item.url.split('?')[0] === activeBaseUrl;
                 return `
-                    <button type="button" onclick="selectSavedSpotifyItem('${item.id}')"
-                            class="px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 shrink-0 transition ${
-                                isSelected
-                                    ? 'bg-[#1DB954]/20 border-[#1DB954] text-[#1ed760] shadow-sm shadow-[#1DB954]/10'
-                                    : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-white'
-                            }">
-                        <i data-lucide="${isSelected ? 'volume-2' : 'disc-3'}" class="w-3.5 h-3.5 shrink-0"></i>
-                        <span>${escapeHTML(item.name)}</span>
-                    </button>
+                    <div class="inline-flex items-center rounded-xl border shrink-0 transition ${
+                        isSelected
+                            ? 'bg-[#1DB954]/20 border-[#1DB954] text-[#1ed760] shadow-sm shadow-[#1DB954]/10'
+                            : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-white'
+                    }">
+                        <button type="button" onclick="selectSavedSpotifyItem('${item.id}')"
+                                class="pl-3 ${canDelete ? 'pr-1.5' : 'pr-3'} py-1.5 text-xs font-semibold flex items-center gap-1.5">
+                            <i data-lucide="${isSelected ? 'volume-2' : 'disc-3'}" class="w-3.5 h-3.5 shrink-0"></i>
+                            <span>${escapeHTML(item.name)}</span>
+                        </button>
+                        ${canDelete ? `
+                            <button type="button" onclick="deleteSavedSpotifyItem('${item.id}', event)" title="Eliminar esta lista de Spotify"
+                                    class="pr-2 pl-1 py-1.5 text-zinc-400 hover:text-rose-400 transition">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
+                        ` : ''}
+                    </div>
                 `;
             }).join('');
             lucide.createIcons();
+        }
+
+        function deleteSavedSpotifyItem(itemId, event) {
+            if (event) event.stopPropagation();
+            if (state.spotifyItems.length <= 1) {
+                showToast('Debe quedar al menos una lista de Spotify');
+                return;
+            }
+
+            const targetIndex = state.spotifyItems.findIndex(i => i.id === itemId);
+            if (targetIndex === -1) return;
+
+            const removedItem = state.spotifyItems[targetIndex];
+            const wasActive = removedItem.url.split('?')[0] === (state.spotifyPlaylistUrl || '').split('?')[0];
+
+            state.spotifyItems.splice(targetIndex, 1);
+            saveSpotifyItemsList();
+
+            if (wasActive && state.spotifyItems.length > 0) {
+                applySpotifyPlaylist(state.spotifyItems[0].url);
+            } else {
+                renderSpotifySelector();
+            }
+
+            showToast(`"${removedItem.name}" eliminada`);
         }
 
         function selectSavedSpotifyItem(itemId) {
@@ -2532,9 +2563,10 @@
                 const prevVal = taskPresetSelect.value;
                 taskPresetSelect.innerHTML = [
                     `<option value="">Sin video (solo alarma)</option>`,
+                    `<option value="alarm_weekdays_maintenance">Lun - Vie (mantenimiento)</option>`,
                     ...presetList.map(p => `<option value="${p.id}">▶ ${escapeHTML(p.name)}</option>`)
                 ].join('');
-                if (prevVal && state.presets[prevVal]) {
+                if (prevVal && (prevVal === 'alarm_weekdays_maintenance' || state.presets[prevVal])) {
                     taskPresetSelect.value = prevVal;
                 }
             }
