@@ -176,7 +176,7 @@
             </section>
 
             <!-- SECTION 2 (Middle Left - 1/3 height): Spotify Playlist Box -->
-            <section class="flex-1 min-h-[230px] lg:min-h-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl overflow-hidden">
+            <section class="flex-1 min-h-[245px] lg:min-h-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl overflow-hidden">
                 <!-- Spotify Card Header -->
                 <div class="flex items-center justify-between gap-2 mb-2 shrink-0">
                     <div class="flex items-center gap-2">
@@ -185,31 +185,12 @@
                         </div>
                         <div>
                             <h2 class="text-xs sm:text-sm font-semibold text-zinc-100 leading-none">Mi Playlist de Spotify</h2>
-                            <p class="text-[11px] text-zinc-400 mt-0.5">Música para tu rutina y enfoque</p>
+                            <p class="text-[11px] text-zinc-400 mt-0.5">Selecciona tu lista o podcast activo</p>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-1.5">
-                        <button onclick="toggleSpotifyInput()" class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Cambiar enlace de playlist">
-                            <i data-lucide="link" class="w-3.5 h-3.5"></i>
-                            <span class="hidden sm:inline">Cambiar Playlist</span>
-                        </button>
-                        <a id="spotify-external-btn" href="https://open.spotify.com/artist/1585BKSPNL4Ydw2P2LUjO4?si=3MGwqg9MRUaDP2HQn8GXkQ&utm_source=copy-link" target="_blank" rel="noopener noreferrer"
-                           class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#1DB954]/20 transition">
-                            <span>Abrir en Spotify</span>
-                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Collapsible URL Input Bar for User's Spotify Playlist -->
-                <div id="spotify-url-form" class="hidden mb-2 shrink-0">
-                    <div class="flex items-center gap-1.5">
-                        <select id="spotify-saved-select" onchange="selectSavedSpotifyItem(this.value)" title="Cambiar entre tus listas o podcasts guardados"
-                                class="bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs font-medium rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-[#1DB954] max-w-[135px] sm:max-w-[170px] truncate cursor-pointer">
-                            <!-- Populated via JS -->
-                        </select>
-                        <button onclick="toggleSpotifyInput()" class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Agregar nuevo enlace de Spotify">
+                        <button type="button" onclick="toggleSpotifyInput()" class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Agregar otro enlace de Spotify">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                             <span class="hidden sm:inline">Agregar</span>
                         </button>
@@ -221,14 +202,19 @@
                     </div>
                 </div>
 
-                <!-- Collapsible URL Input Bar for User's Spotify Playlist / Show -->
+                <!-- Always-Visible Playlist & Podcast Quick Selector Pills -->
+                <div id="spotify-saved-pills" class="flex items-center gap-1.5 overflow-x-auto pb-1 mb-2 shrink-0">
+                    <!-- Populated via JS -->
+                </div>
+
+                <!-- Collapsible URL Input Bar for Adding a New Spotify Playlist / Show -->
                 <div id="spotify-url-form" class="hidden mb-2 shrink-0">
                     <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5">
                         <input type="text" id="spotify-name-input" placeholder="Nombre (ej. Podcast Enfoque)"
                                class="w-full sm:w-40 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-[#1DB954]">
                         <input type="url" id="spotify-url-input" placeholder="Pega aquí el enlace de playlist, artista o podcast..."
                                class="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-[#1DB954]">
-                        <button onclick="saveSpotifyPlaylist()" class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-semibold transition shrink-0">
+                        <button type="button" onclick="saveSpotifyPlaylist()" class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-semibold transition shrink-0">
                             Guardar
                         </button>
                     </div>
@@ -2213,14 +2199,25 @@
         }
 
         function renderSpotifySelector() {
-            const select = document.getElementById('spotify-saved-select');
-            if (!select) return;
+            const pillsContainer = document.getElementById('spotify-saved-pills');
+            if (!pillsContainer) return;
 
             const activeBaseUrl = (state.spotifyPlaylistUrl || '').split('?')[0];
-            select.innerHTML = state.spotifyItems.map(item => {
+            pillsContainer.innerHTML = state.spotifyItems.map(item => {
                 const isSelected = item.url.split('?')[0] === activeBaseUrl;
-                return `<option value="${item.id}" ${isSelected ? 'selected' : ''}>${escapeHTML(item.name)}</option>`;
+                return `
+                    <button type="button" onclick="selectSavedSpotifyItem('${item.id}')"
+                            class="px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 shrink-0 transition ${
+                                isSelected
+                                    ? 'bg-[#1DB954]/20 border-[#1DB954] text-[#1ed760] shadow-sm shadow-[#1DB954]/10'
+                                    : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-white'
+                            }">
+                        <i data-lucide="${isSelected ? 'volume-2' : 'disc-3'}" class="w-3.5 h-3.5 shrink-0"></i>
+                        <span>${escapeHTML(item.name)}</span>
+                    </button>
+                `;
             }).join('');
+            lucide.createIcons();
         }
 
         function selectSavedSpotifyItem(itemId) {
