@@ -2,7 +2,7 @@
 <html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Rutina Diaria PWA - Gestión de Tiempo, Alarmas y Multimedia</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -51,57 +51,57 @@
         .alarm-active-ring {
             animation: pulse-ring 1.5s infinite ease-in-out;
         }
+
+        /* Autoajuste por orientación (horizontal / vertical) y altura dinámica */
+        .app-shell {
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        @media (orientation: landscape) and (max-height: 540px) {
+            .app-shell {
+                flex-direction: row !important;
+                height: 100dvh !important;
+                overflow: hidden !important;
+            }
+            #left-productivity-panel {
+                width: 46% !important;
+                height: 100% !important;
+                border-bottom: 0 !important;
+                border-right: 1px solid rgba(39, 39, 42, 0.85) !important;
+            }
+            #video-workspace-panel {
+                width: 54% !important;
+                height: 100% !important;
+            }
+            .video-stage-box {
+                max-height: 56dvh !important;
+            }
+        }
+
+        @media (orientation: portrait) and (max-width: 1023px) {
+            .app-shell {
+                flex-direction: column !important;
+                height: auto !important;
+                overflow-x: hidden !important;
+            }
+            #left-productivity-panel {
+                width: 100% !important;
+                height: auto !important;
+                border-right: 0 !important;
+                border-bottom: 1px solid rgba(39, 39, 42, 0.85) !important;
+            }
+            #video-workspace-panel {
+                width: 100% !important;
+                height: auto !important;
+            }
+            .video-stage-box {
+                max-height: 36dvh !important;
+            }
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col lg:h-screen lg:overflow-hidden bg-zinc-950 text-zinc-100 antialiased selection:bg-indigo-500 selection:text-white">
-
-    <!-- ===================================================================== -->
-    <!-- ACTIVE ALARM BANNER (Triggers at Start and End Time of Scheduled Tasks) -->
-    <!-- ===================================================================== -->
-    <div id="alarm-banner" class="hidden fixed inset-x-0 top-0 z-50 bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 text-white shadow-2xl border-b border-amber-300/30 px-4 py-3">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-white/20 rounded-xl alarm-active-ring">
-                    <i data-lucide="bell-ring" class="w-6 h-6 text-white"></i>
-                </div>
-                <div>
-                    <p id="alarm-banner-badge" class="text-[11px] font-bold uppercase tracking-wider text-amber-100">Alarma de Rutina</p>
-                    <h3 id="alarm-banner-title" class="text-sm sm:text-base font-bold leading-tight">Actividad en curso</h3>
-                </div>
-            </div>
-            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <button id="alarm-complete-btn" onclick="completeTaskFromAlarm()" class="hidden px-3 py-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-950 text-emerald-200 text-xs font-semibold border border-emerald-400/30 transition">
-                    Marcar completada
-                </button>
-                <button onclick="dismissAlarmBanner()" class="px-4 py-1.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-100 text-xs font-bold shadow transition">
-                    Detener Alarma
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===================================================================== -->
-    <!-- TOAST NOTIFICATION CONTAINER                                          -->
-    <!-- ===================================================================== -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"></div>
-
-    <!-- ===================================================================== -->
-    <!-- MAIN SPLIT-SCREEN WORKSPACE (LEFT: PRODUCTIVITY | RIGHT: VIDEO)       -->
-    <!-- ===================================================================== -->
-    <div class="flex-1 flex flex-col lg:flex-row lg:h-full overflow-x-hidden">
-
-        <!-- ================================================================= -->
-        <!-- LEFT PANEL (45%): DAILY CALENDAR, SPOTIFY & DAILY EVALUATION      -->
-        <!-- ================================================================= -->
-        <aside id="left-productivity-panel" class="w-full lg:w-[45%] xl:w-[42%] flex flex-col lg:h-full bg-zinc-900/90 border-b lg:border-b-0 lg:border-r border-zinc-800/80">
-            
-            <!-- Top App Bar with Live Clock & Alarm Status -->
-            <header class="px-5 py-3.5 bg-zinc-950/80 border-b border-zinc-800/80 flex items-center justify-between gap-2 shrink-0">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                        <i data-lucide="calendar-clock" class="w-5 h-5"></i>
-                    </div>
-                    <div>
+<body class="app-shell flex flex-col lg:flex-row lg:h-dvh lg:overflow-hidden bg-zinc-950 text-zinc-100 antialiased selection:bg-indigo-500 selection:text-white">
                         <h1 class="text-sm font-bold tracking-tight text-white">Rutina Diaria</h1>
                         <p id="live-date-label" class="text-[11px] text-zinc-400 capitalize">Cargando fecha...</p>
                     </div>
@@ -348,7 +348,7 @@
             <div class="flex-1 flex flex-col p-4 sm:p-5 overflow-y-auto gap-4">
                 
                 <!-- Responsive 16:9 YouTube Player Wrapper -->
-                <div class="relative w-full aspect-video max-h-[65vh] bg-black rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl mx-auto">
+                <div class="video-stage-box relative w-full aspect-video max-h-[65vh] lg:max-h-[65dvh] bg-black rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl mx-auto transition-all duration-200">
                     <div id="youtube-player-container" class="w-full h-full"></div>
 
                     <!-- Autoplay Unmute Helper Banner (shown if browser requires user interaction for audio) -->
@@ -608,7 +608,15 @@
         }
 
         function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
+            let container = document.getElementById('toast-container');
+            if (!container && document.body) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0';
+                document.body.appendChild(container);
+            }
+            if (!container) return;
+
             const colors = {
                 info: 'bg-zinc-900 border-zinc-700 text-zinc-100',
                 success: 'bg-emerald-950/95 border-emerald-500/40 text-emerald-200',
@@ -1636,15 +1644,11 @@
         }
 
         function onPlayerError() {
+            const videos = getActivePlaylistVideos();
+            if (!videos.length) return;
             showToast('Este video no permite reproducción integrada, saltando al siguiente...', 'warning');
-            setTimeout(() => playNextVideo(true), 1200);
-        }
-
-        function unmuteYouTubePlayer() {
-            if (state.ytPlayer && typeof state.ytPlayer.unMute === 'function') {
-                state.ytPlayer.unMute();
-                state.ytPlayer.setVolume(100);
-                document.getElementById('unmute-helper-banner').classList.add('hidden');
+            if (videos.length > 1) {
+                setTimeout(() => playNextVideo(false), 1200);
             }
         }
 
@@ -1870,6 +1874,20 @@
             // Start realtime clock & alarm monitor
             updateClockAndAlarms();
             setInterval(updateClockAndAlarms, 1000);
+
+            // Autoajuste al girar entre vertical y horizontal
+            const handleOrientationResize = () => {
+                if (state.ytPlayer && typeof state.ytPlayer.setSize === 'function') {
+                    const wrapper = document.querySelector('.video-stage-box');
+                    if (wrapper && wrapper.clientWidth > 0 && wrapper.clientHeight > 0) {
+                        try {
+                            state.ytPlayer.setSize(wrapper.clientWidth, wrapper.clientHeight);
+                        } catch (_) {}
+                    }
+                }
+            };
+            window.addEventListener('resize', handleOrientationResize);
+            window.addEventListener('orientationchange', () => setTimeout(handleOrientationResize, 180));
         });
     </script>
 </body>
