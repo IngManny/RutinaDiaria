@@ -89,67 +89,11 @@
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2">
-                    <span id="pwa-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-zinc-900 border border-zinc-800 text-emerald-400">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        PWA Lista
-                    </span>
+                <!-- 7-Day Interactive Strip -->
+                <div id="week-strip" class="grid grid-cols-7 gap-1 my-2 shrink-0">
+                    <!-- Populated via JS -->
                 </div>
-            </header>
 
-            <!-- SECTION 1 (Top Left - 1/3 height): Daily Calendar & Tasks -->
-            <section class="flex-1 min-h-[260px] lg:min-h-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col shadow-xl overflow-hidden">
-                <!-- Calendar Header, Alarm Controls & Day Navigation -->
-                <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-zinc-800/80 shrink-0">
-                    <div class="flex items-center gap-2">
-                        <div class="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-400">
-                            <i data-lucide="calendar-days" class="w-4 h-4"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-xs sm:text-sm font-semibold text-zinc-100 leading-none">Calendario Diario</h2>
-                            <p id="live-clock-display" class="text-[10px] font-mono text-zinc-400 mt-0.5">--:--:--</p>
-                        </div>
-                    </div>
-
-                    <!-- Alarm Controls, Agenda Overview & Date Controls -->
-                    <div class="flex flex-wrap items-center gap-1.5">
-                        <!-- Agenda Overview Button -->
-                        <button type="button" onclick="openTasksOverviewModal()" title="Ver todas las tareas programadas por fecha"
-                                class="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 hover:bg-indigo-500/25 text-indigo-300 text-[11px] font-semibold flex items-center gap-1 transition">
-                            <i data-lucide="list-checks" class="w-3.5 h-3.5"></i>
-                            <span>Agenda</span>
-                        </button>
-
-                        <!-- Alarm Sound / Permission Toggle & Test -->
-                        <div class="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
-                            <button type="button" id="alarm-sound-toggle-btn" onclick="toggleAlarmSound()" title="Activar o silenciar alarmas de inicio y fin"
-                                    class="px-2 py-1 rounded-lg bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 text-[11px] font-medium flex items-center gap-1 transition">
-                                <i id="alarm-sound-icon" data-lucide="bell-ring" class="w-3.5 h-3.5"></i>
-                                <span id="alarm-sound-label" class="hidden sm:inline">Alarmas ON</span>
-                            </button>
-                            <button type="button" onclick="triggerTestAlarm()" title="Probar sonido y notificación de alarma"
-                                    class="px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium flex items-center gap-1 transition">
-                                <i data-lucide="volume-2" class="w-3.5 h-3.5 text-emerald-400"></i>
-                                <span class="hidden md:inline">Probar</span>
-                            </button>
-                        </div>
-
-                        <!-- Date Controls -->
-                        <div class="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
-                            <button onclick="changeDay(-1)" title="Día anterior" class="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition">
-                                <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
-                            </button>
-                            <input type="date" id="date-picker" onchange="selectDateFromPicker(this.value)" 
-                                   class="bg-transparent text-xs font-medium text-zinc-200 px-1.5 focus:outline-none cursor-pointer [color-scheme:dark]">
-                            <button onclick="changeDay(1)" title="Día siguiente" class="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition">
-                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                            </button>
-                            <button onclick="goToToday()" class="ml-1 px-2 py-1 text-[11px] font-medium rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 transition">
-                                Hoy
-                            </button>
-                        </div>
-                    </div>
-                </div>
                 <!-- Add Task Input Row (Start Time + End Time + Title + Repeat Rule) -->
                 <form onsubmit="addDailyTask(event)" class="flex flex-wrap items-center gap-1.5 mb-2 shrink-0">
                     <div class="flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 shrink-0" title="Hora de inicio y hora de fin">
@@ -1464,27 +1408,6 @@
             );
         }
 
-            if (!state.tasksByDate[state.selectedDate]) {
-                state.tasksByDate[state.selectedDate] = [];
-            }
-
-            state.tasksByDate[state.selectedDate].push({
-                id: 'task_' + Date.now(),
-                startTime: startTime,
-                endTime: endTime,
-                text: text,
-                completed: false
-            });
-
-            // Advance suggested next start/end block for convenience
-            startInput.value = endTime;
-            endInput.value = addMinutesToTimeStr(endTime, 30);
-            textInput.value = '';
-
-            saveTasks();
-            renderCalendar();
-            showToast(`Actividad agregada (${startTime} - ${endTime})`);
-        }
         function deleteTask(taskId) {
             const tasks = state.tasksByDate[state.selectedDate] || [];
             state.tasksByDate[state.selectedDate] = tasks.filter(t => t.id !== taskId);
