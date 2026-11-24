@@ -51,49 +51,49 @@
         .alarm-active-ring {
             animation: pulse-ring 1.5s infinite ease-in-out;
         }
+
+        /* Horizontal split workspace layout */
+        .horizontal-workspace {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        .horizontal-left-panel {
+            width: 44%;
+            min-width: 310px;
+            max-width: 560px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .horizontal-right-panel {
+            flex: 1;
+            min-width: 320px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 767px) {
+            .horizontal-left-panel {
+                width: 48%;
+                min-width: 195px;
+                max-width: none;
+            }
+            .horizontal-right-panel {
+                width: 52%;
+                min-width: 205px;
+            }
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col lg:h-screen lg:overflow-hidden bg-zinc-950 text-zinc-100 antialiased selection:bg-indigo-500 selection:text-white">
-
-    <!-- ===================================================================== -->
-    <!-- ACTIVE ALARM BANNER (Triggers at Start and End Time of Scheduled Tasks) -->
-    <!-- ===================================================================== -->
-    <div id="alarm-banner" class="hidden fixed inset-x-0 top-0 z-50 bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 text-white shadow-2xl border-b border-amber-300/30 px-4 py-3">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-white/20 rounded-xl alarm-active-ring">
-                    <i data-lucide="bell-ring" class="w-6 h-6 text-white"></i>
-                </div>
-                <div>
-                    <p id="alarm-banner-badge" class="text-[11px] font-bold uppercase tracking-wider text-amber-100">Alarma de Rutina</p>
-                    <h3 id="alarm-banner-title" class="text-sm sm:text-base font-bold leading-tight">Actividad en curso</h3>
-                </div>
-            </div>
-            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <button id="alarm-complete-btn" onclick="completeTaskFromAlarm()" class="hidden px-3 py-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-950 text-emerald-200 text-xs font-semibold border border-emerald-400/30 transition">
-                    Marcar completada
-                </button>
-                <button onclick="dismissAlarmBanner()" class="px-4 py-1.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-100 text-xs font-bold shadow transition">
-                    Detener Alarma
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===================================================================== -->
-    <!-- TOAST NOTIFICATION CONTAINER                                          -->
-    <!-- ===================================================================== -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"></div>
-
-    <!-- ===================================================================== -->
-    <!-- MAIN SPLIT-SCREEN WORKSPACE (LEFT: PRODUCTIVITY | RIGHT: VIDEO)       -->
-    <!-- ===================================================================== -->
-    <div class="flex-1 flex flex-col lg:flex-row lg:h-full overflow-x-hidden">
-
-        <!-- ================================================================= -->
-        <!-- LEFT PANEL (45%): DAILY CALENDAR, SPOTIFY & DAILY EVALUATION      -->
-        <!-- ================================================================= -->
-        <aside id="left-productivity-panel" class="w-full lg:w-[45%] xl:w-[42%] flex flex-col lg:h-full bg-zinc-900/90 border-b lg:border-b-0 lg:border-r border-zinc-800/80">
+<body class="h-screen w-screen overflow-hidden flex flex-col bg-zinc-950 text-zinc-100 antialiased selection:bg-indigo-500 selection:text-white">
             
             <!-- Top App Bar with Live Clock & Alarm Status -->
             <header class="px-5 py-3.5 bg-zinc-950/80 border-b border-zinc-800/80 flex items-center justify-between gap-3 shrink-0">
@@ -123,14 +123,14 @@
             </header>
 
             <!-- ===================================================================== -->
-            <!-- SCROLLABLE LEFT BODY                                              -->
-            <!-- ===================================================================== -->
-            <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
+    <!-- MAIN SPLIT-SCREEN WORKSPACE (LEFT: PRODUCTIVITY | RIGHT: VIDEO)       -->
+    <!-- ===================================================================== -->
+    <div class="flex-1 horizontal-workspace">
 
-                <!-- ------------------------------------------------------------- -->
-                <!-- 1. CALENDAR & SCHEDULED TASKS WITH AUTOMATIC ALARMS & VIDEOS  -->
-                <!-- ------------------------------------------------------------- -->
-                <section class="bg-zinc-950/70 border border-zinc-800/90 rounded-2xl p-4 shadow-sm">
+        <!-- ================================================================= -->
+        <!-- LEFT PANEL (45%): DAILY CALENDAR, SPOTIFY & DAILY EVALUATION      -->
+        <!-- ================================================================= -->
+        <aside id="left-productivity-panel" class="horizontal-left-panel bg-zinc-900/90 border-r border-zinc-800/80 shrink-0">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <div class="flex items-center gap-2">
                             <i data-lucide="calendar-days" class="w-4 h-4 text-indigo-400"></i>
@@ -304,7 +304,7 @@
         <!-- ================================================================= -->
         <!-- RIGHT PANEL (55%): SEQUENTIAL YOUTUBE VIDEO PLAYLIST PLAYER       -->
         <!-- ================================================================= -->
-        <main id="video-workspace-panel" class="w-full lg:w-[55%] xl:w-[58%] flex flex-col lg:h-full bg-zinc-950">
+        <main id="video-workspace-panel" class="horizontal-right-panel bg-zinc-950">
             
             <!-- Video Top Control Bar -->
             <div class="px-5 py-3.5 bg-zinc-900/60 border-b border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
