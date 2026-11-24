@@ -351,7 +351,7 @@
                         <!-- Populated dynamically -->
                     </select>
 
-                    <button onclick="playNextVideo(true)" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Siguiente video">
+                    <button onclick="playNextVideo(true, false)" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Siguiente video">
                         <span>Siguiente</span>
                         <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i>
                     </button>
@@ -393,7 +393,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div>
                             <span id="now-playing-step" class="text-[11px] font-bold uppercase tracking-wider text-indigo-400">Video 1 de 4</span>
-                            <h3 id="now-playing-title" class="text-sm sm:text-base font-semibold text-white">Cargando reproductor...</h3>
+                            <h3 id="now-playing-title" class="text-sm sm:text-base font-semibold text-white">Listo para iniciar cuando comience tu tarea</h3>
                         </div>
                         <div class="flex items-center gap-2">
                             <button onclick="restartSequenceFromBeginning()" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-200 flex items-center gap-1.5 transition">
@@ -728,18 +728,6 @@
         // =========================================================================
         // 4. CALENDAR, RECURRING TASKS, EDITING & REAL-TIME ALARM ENGINE
         // =========================================================================
-        function seedInitialTasksIfEmpty() {
-            if (Object.keys(state.tasksByDate).length === 0) {
-                const today = getTodayStr();
-                state.tasksByDate[today] = [
-                    { id: 't1', startTime: '07:30', endTime: '08:15', title: 'Rutina de videos y activación física', completed: false, videoPresetId: 'mwf' },
-                    { id: 't2', startTime: '09:00', endTime: '11:00', title: 'Bloque de trabajo profundo con Spotify', completed: false, videoPresetId: '' },
-                    { id: 't3', startTime: '18:30', endTime: '19:00', title: 'Revisión de logros y evaluación del día', completed: false, videoPresetId: '' }
-                ];
-                saveTasks();
-            }
-        }
-
         function saveTasks() {
             localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(state.tasksByDate));
         }
@@ -1002,7 +990,6 @@
                 item.videoPresetId = newVideoPresetId;
                 if (sharedSeriesId) item.seriesId = sharedSeriesId;
 
-                // Clear triggered alarm flags for this date if times changed
                 delete state.triggeredAlarms[`${dateKey}_${item.id}_start_${oldStart}`];
                 delete state.triggeredAlarms[`${dateKey}_${item.id}_end_${oldEnd}`];
 
@@ -1186,13 +1173,13 @@
 
                     // Priority 1: Task-specific linked video playlist
                     if (task.videoPresetId && task.videoPresetId !== '__maintenance_weekdays__' && state.presets[task.videoPresetId]) {
-                        switchVideoPreset(task.videoPresetId, true);
+                        switchVideoPreset(task.videoPresetId, true, true);
                         showToast(`Horario (${task.startTime}): iniciando "${state.presets[task.videoPresetId].name}" en Video 1.`, 'info');
                     }
                     // Priority 2: Fallback auto-start on the first scheduled task of the day
                     else if (index === 0 && state.autoStartFirstTask) {
                         const dayPresetId = getPresetIdForDate(todayStr);
-                        switchVideoPreset(dayPresetId, true);
+                        switchVideoPreset(dayPresetId, true, true);
                         showToast(`Inicio de primera tarea (${task.startTime}): reproduciendo Video 1 automáticamente.`, 'info');
                     }
                 }
@@ -1558,7 +1545,7 @@
                 height: '100%',
                 videoId: firstVideoId,
                 playerVars: {
-                    autoplay: state.pendingAutoplay ? 1 : 0,
+                    autoplay: 0,
                     rel: 0,
                     modestbranding: 1,
                     playsinline: 1
@@ -1576,13 +1563,12 @@
             renderVideoQueueUI();
             if (state.pendingAutoplay) {
                 state.pendingAutoplay = false;
-                playVideoAtIndex(0, true);
+                playVideoAtIndex(0, true, true);
             }
         }
 
         function onPlayerStateChange(event) {
             if (event.data === YT.PlayerState.PLAYING) {
-                enterVideoFullscreenMode(false);
                 if (state.ytPlayer && typeof state.ytPlayer.isMuted === 'function' && state.ytPlayer.isMuted()) {
                     document.getElementById('unmute-helper-banner').classList.remove('hidden');
                 } else {
@@ -1592,13 +1578,13 @@
 
             // YT.PlayerState.ENDED === 0 -> Automatically advance to next video
             if (event.data === YT.PlayerState.ENDED) {
-                playNextVideo(true);
+                playNextVideo(true, state.isVideoExpanded);
             }
         }
 
         function onPlayerError() {
             showToast('Este video no permite reproducción integrada, saltando al siguiente...', 'warning');
-            setTimeout(() => playNextVideo(true), 1200);
+            setTimeout(() => playNextVideo(true, state.isVideoExpanded), 1200);
         }
 
         function unmuteYouTubePlayer() {
@@ -1625,14 +1611,14 @@
             dayBadge.textContent = preset ? `Rutina activa: ${preset.name}` : 'Rutina personalizada';
         }
 
-        function switchVideoPreset(presetId, autoplayFirst = true) {
+        function switchVideoPreset(presetId, autoplayFirst = false, expandFullscreen = false) {
             if (!state.presets[presetId]) return;
             state.activePresetId = presetId;
             state.currentVideoIndex = 0;
             renderPresetSelector();
             renderVideoQueueUI();
             if (autoplayFirst) {
-                playVideoAtIndex(0, true);
+                playVideoAtIndex(0, true, expandFullscreen);
             } else {
                 const videos = getActivePlaylistVideos();
                 if (state.ytReady && videos[0]) {
@@ -1643,10 +1629,10 @@
         }
 
         function onVideoPresetChange(newPresetId) {
-            switchVideoPreset(newPresetId, true);
+            switchVideoPreset(newPresetId, false, false);
         }
 
-        function playVideoAtIndex(index, autoplay = true) {
+        function playVideoAtIndex(index, autoplay = true, expandFullscreen = false) {
             const videos = getActivePlaylistVideos();
             if (!videos.length) return;
 
@@ -1656,7 +1642,7 @@
 
             renderVideoQueueUI();
 
-            if (autoplay) {
+            if (expandFullscreen) {
                 enterVideoFullscreenMode(true);
             }
 
@@ -1696,7 +1682,7 @@
 
             if (tryNativeFullscreen && !document.fullscreenElement && panel.requestFullscreen) {
                 panel.requestFullscreen().catch(() => {
-                    // Fallback to full-viewport Theater Mode (already active via .video-panel-fullscreen)
+                    // Fallback to full-viewport Theater Mode
                 });
             }
         }
@@ -1796,14 +1782,12 @@
             }
         }
 
-        // Re-acquire Wake Lock automatically when returning to the tab
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && !state.wakeLockSentinel) {
                 requestScreenWakeLock(true);
             }
         });
 
-        // Register inline PWA Service Worker for offline resilience & standalone app install
         function registerOfflinePWAWorker() {
             if (!('serviceWorker' in navigator)) return;
             const swCode = `
@@ -1828,7 +1812,6 @@
             } catch (e) {}
         }
 
-        // Export scheduled tasks as .ics calendar reminders (rings on phone/PC even with browser closed)
         function exportTasksToICS() {
             const dates = Object.keys(state.tasksByDate).sort();
             let eventBlocks = [];
@@ -1887,20 +1870,20 @@
             showToast(`Calendario exportado (${eventBlocks.length} alarmas). Ábrelo para sincronizar con tu dispositivo.`, 'success');
         }
 
-        function playNextVideo(autoplay = true) {
+        function playNextVideo(autoplay = true, expandFullscreen = false) {
             const videos = getActivePlaylistVideos();
             if (!videos.length) return;
             const nextIdx = state.currentVideoIndex + 1;
             if (nextIdx >= videos.length) {
                 showToast('Secuencia completada. Reiniciando desde el Video 1.', 'info');
-                playVideoAtIndex(0, autoplay);
+                playVideoAtIndex(0, autoplay, expandFullscreen);
             } else {
-                playVideoAtIndex(nextIdx, autoplay);
+                playVideoAtIndex(nextIdx, autoplay, expandFullscreen);
             }
         }
 
         function restartSequenceFromBeginning() {
-            playVideoAtIndex(0, true);
+            playVideoAtIndex(0, true, false);
         }
 
         function renderVideoQueueUI() {
@@ -1923,7 +1906,7 @@
             queueEl.innerHTML = videos.map((vid, idx) => {
                 const isActive = idx === state.currentVideoIndex;
                 return `
-                    <button onclick="playVideoAtIndex(${idx}, true)" class="text-left p-2.5 rounded-xl border transition flex items-start gap-2.5 ${
+                    <button onclick="playVideoAtIndex(${idx}, true, false)" class="text-left p-2.5 rounded-xl border transition flex items-start gap-2.5 ${
                         isActive
                             ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-sm'
                             : 'bg-zinc-950/80 border-zinc-800/90 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
@@ -1994,7 +1977,7 @@
             localStorage.setItem(STORAGE_KEYS.VIDEO_PRESETS, JSON.stringify(state.presets));
 
             closeEditPlaylistModal();
-            playVideoAtIndex(0, true);
+            playVideoAtIndex(0, false, false);
             showToast('Lista de videos actualizada y guardada.', 'success');
         }
 
@@ -2004,8 +1987,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
 
-            // Initialize Calendar & Seed Sample Tasks if First Visit
-            seedInitialTasksIfEmpty();
+            // Initialize Calendar (no forced autoplaying tasks on first load)
             renderCalendar();
 
             // Initialize Saved Spotify Playlists Switcher
