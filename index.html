@@ -51,9 +51,9 @@
         .alarm-active-ring {
             animation: pulse-ring 1.5s infinite ease-in-out;
         }
-
-        /* Horizontal split workspace layout */
-        .horizontal-workspace {
+    </style>
+</head>
+<body class="min-h-screen flex flex-col lg:h-screen lg:overflow-hidden bg-zinc-950 text-zinc-100 antialiased selection:bg-indigo-500 selection:text-white">
             display: flex;
             flex-direction: row;
             width: 100%;
@@ -125,12 +125,12 @@
             <!-- ===================================================================== -->
     <!-- MAIN SPLIT-SCREEN WORKSPACE (LEFT: PRODUCTIVITY | RIGHT: VIDEO)       -->
     <!-- ===================================================================== -->
-    <div class="flex-1 horizontal-workspace">
+    <div class="flex-1 flex flex-col lg:flex-row lg:h-full overflow-x-hidden">
 
         <!-- ================================================================= -->
         <!-- LEFT PANEL (45%): DAILY CALENDAR, SPOTIFY & DAILY EVALUATION      -->
         <!-- ================================================================= -->
-        <aside id="left-productivity-panel" class="horizontal-left-panel bg-zinc-900/90 border-r border-zinc-800/80 shrink-0">
+        <aside id="left-productivity-panel" class="w-full lg:w-[45%] xl:w-[42%] flex flex-col lg:h-full bg-zinc-900/90 border-b lg:border-b-0 lg:border-r border-zinc-800/80">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <div class="flex items-center gap-2">
                             <i data-lucide="calendar-days" class="w-4 h-4 text-indigo-400"></i>
@@ -304,7 +304,7 @@
         <!-- ================================================================= -->
         <!-- RIGHT PANEL (55%): SEQUENTIAL YOUTUBE VIDEO PLAYLIST PLAYER       -->
         <!-- ================================================================= -->
-        <main id="video-workspace-panel" class="horizontal-right-panel bg-zinc-950">
+        <main id="video-workspace-panel" class="w-full lg:w-[55%] xl:w-[58%] flex flex-col lg:h-full bg-zinc-950">
             
             <!-- Video Top Control Bar -->
             <div class="px-5 py-3.5 bg-zinc-900/60 border-b border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
