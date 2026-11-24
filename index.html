@@ -51,16 +51,6 @@
         .alarm-active-ring {
             animation: pulse-ring 1.5s infinite ease-in-out;
         }
-
-        /* Fullscreen / Theater Mode for Video Panel */
-        .video-panel-fullscreen {
-            position: fixed !important;
-            inset: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            z-index: 45 !important;
-            background-color: #000000 !important;
-        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col lg:h-screen lg:overflow-hidden bg-zinc-950 text-zinc-100 antialiased selection:bg-indigo-500 selection:text-white">
@@ -106,7 +96,7 @@
         <aside id="left-productivity-panel" class="w-full lg:w-[45%] xl:w-[42%] flex flex-col lg:h-full bg-zinc-900/90 border-b lg:border-b-0 lg:border-r border-zinc-800/80">
             
             <!-- Top App Bar with Live Clock & Alarm Status -->
-            <header class="px-5 py-3.5 bg-zinc-950/80 border-b border-zinc-800/80 flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <header class="px-5 py-3.5 bg-zinc-950/80 border-b border-zinc-800/80 flex items-center justify-between gap-2 shrink-0">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
                         <i data-lucide="calendar-clock" class="w-5 h-5"></i>
@@ -117,7 +107,7 @@
                     </div>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-1.5">
+                <div class="flex items-center gap-2">
                     <!-- Live Digital Clock -->
                     <div class="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -125,21 +115,9 @@
                     </div>
 
                     <!-- Audio Test & Permission Helper -->
-                    <button id="btn-test-alarm" onclick="testAlarmSound()" title="Probar sonido de alarma" class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition">
+                    <button id="btn-test-alarm" onclick="testAlarmSound()" title="Probar sonido de alarma" class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition">
                         <i data-lucide="volume-2" class="w-3.5 h-3.5 text-amber-400"></i>
                         <span class="hidden sm:inline">Probar</span>
-                    </button>
-
-                    <!-- Keep Screen Awake (Wake Lock) -->
-                    <button id="btn-wake-lock" onclick="toggleScreenWakeLock()" title="Evitar que la pantalla o TV se suspenda" class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/70 text-xs font-medium flex items-center gap-1 transition">
-                        <i data-lucide="monitor-check" class="w-3.5 h-3.5 text-sky-400"></i>
-                        <span id="wake-lock-label" class="hidden md:inline">Pantalla Activa</span>
-                    </button>
-
-                    <!-- Export Native OS Calendar Alerts (.ics) -->
-                    <button onclick="exportTasksToICS()" title="Exportar alarmas al calendario del teléfono/PC (suena aunque cierres el navegador)" class="px-2.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-300 border border-emerald-500/40 text-xs font-medium flex items-center gap-1 transition">
-                        <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i>
-                        <span class="hidden md:inline">Alarmas OS (.ics)</span>
                     </button>
                 </div>
             </header>
@@ -323,7 +301,7 @@
         <!-- ================================================================= -->
         <!-- RIGHT PANEL (55%): SEQUENTIAL YOUTUBE VIDEO PLAYLIST PLAYER       -->
         <!-- ================================================================= -->
-        <main id="video-workspace-panel" class="w-full lg:w-[55%] xl:w-[58%] flex flex-col lg:h-full bg-zinc-950 transition-all">
+        <main id="video-workspace-panel" class="w-full lg:w-[55%] xl:w-[58%] flex flex-col lg:h-full bg-zinc-950">
             
             <!-- Video Top Control Bar -->
             <div class="px-5 py-3.5 bg-zinc-900/60 border-b border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
@@ -351,18 +329,12 @@
                         <!-- Populated dynamically -->
                     </select>
 
-                    <button onclick="playNextVideo(true, false)" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Siguiente video">
+                    <button onclick="playNextVideo(true)" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Siguiente video">
                         <span>Siguiente</span>
                         <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i>
                     </button>
 
-                    <!-- Fullscreen Toggle / Exit Button -->
-                    <button id="btn-toggle-video-fullscreen" onclick="toggleVideoFullscreenMode()" class="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/35 text-indigo-300 border border-indigo-500/40 text-xs font-semibold flex items-center gap-1 transition" title="Pantalla completa (ESC para salir)">
-                        <i id="video-fullscreen-icon" data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
-                        <span id="video-fullscreen-label">Pantalla Completa</span>
-                    </button>
-
-                    <button onclick="openEditPlaylistModal()" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Editar enlaces de esta lista">
+                    <button onclick="openEditPlaylistModal()" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition" title="Editar enlaces de esta lista">
                         <i data-lucide="settings-2" class="w-3.5 h-3.5 text-indigo-400"></i>
                         <span class="hidden sm:inline">Editar Lista</span>
                     </button>
@@ -393,7 +365,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div>
                             <span id="now-playing-step" class="text-[11px] font-bold uppercase tracking-wider text-indigo-400">Video 1 de 4</span>
-                            <h3 id="now-playing-title" class="text-sm sm:text-base font-semibold text-white">Listo para iniciar cuando comience tu tarea</h3>
+                            <h3 id="now-playing-title" class="text-sm sm:text-base font-semibold text-white">Cargando reproductor...</h3>
                         </div>
                         <div class="flex items-center gap-2">
                             <button onclick="restartSequenceFromBeginning()" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-200 flex items-center gap-1.5 transition">
@@ -574,9 +546,7 @@
             pendingAutoplay: false,
             triggeredAlarms: JSON.parse(localStorage.getItem(STORAGE_KEYS.TRIGGERED_ALARMS)) || {},
             activeAlarmTaskId: null,
-            whatsappSyncPhone: localStorage.getItem(STORAGE_KEYS.WHATSAPP_PHONE) || '',
-            isVideoExpanded: false,
-            wakeLockSentinel: null
+            whatsappSyncPhone: localStorage.getItem(STORAGE_KEYS.WHATSAPP_PHONE) || ''
         };
 
         // =========================================================================
@@ -728,6 +698,18 @@
         // =========================================================================
         // 4. CALENDAR, RECURRING TASKS, EDITING & REAL-TIME ALARM ENGINE
         // =========================================================================
+        function seedInitialTasksIfEmpty() {
+            const today = getTodayStr();
+            if (Object.keys(state.tasksByDate).length === 0) {
+                state.tasksByDate[today] = [
+                    { id: 't_seed_1', startTime: '08:00', endTime: '08:30', title: 'Activación matutina y revisión de objetivos', videoPresetId: '', completed: false },
+                    { id: 't_seed_2', startTime: '09:00', endTime: '10:30', title: 'Bloque de enfoque profundo (Deep Work)', videoPresetId: '', completed: false },
+                    { id: 't_seed_3', startTime: '18:00', endTime: '18:45', title: 'Rutina de videos y cierre de jornada', videoPresetId: '', completed: false }
+                ];
+                saveTasks();
+            }
+        }
+
         function saveTasks() {
             localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(state.tasksByDate));
         }
@@ -1173,13 +1155,13 @@
 
                     // Priority 1: Task-specific linked video playlist
                     if (task.videoPresetId && task.videoPresetId !== '__maintenance_weekdays__' && state.presets[task.videoPresetId]) {
-                        switchVideoPreset(task.videoPresetId, true, true);
+                        switchVideoPreset(task.videoPresetId, true);
                         showToast(`Horario (${task.startTime}): iniciando "${state.presets[task.videoPresetId].name}" en Video 1.`, 'info');
                     }
                     // Priority 2: Fallback auto-start on the first scheduled task of the day
                     else if (index === 0 && state.autoStartFirstTask) {
                         const dayPresetId = getPresetIdForDate(todayStr);
-                        switchVideoPreset(dayPresetId, true, true);
+                        switchVideoPreset(dayPresetId, true);
                         showToast(`Inicio de primera tarea (${task.startTime}): reproduciendo Video 1 automáticamente.`, 'info');
                     }
                 }
@@ -1563,7 +1545,7 @@
             renderVideoQueueUI();
             if (state.pendingAutoplay) {
                 state.pendingAutoplay = false;
-                playVideoAtIndex(0, true, true);
+                playVideoAtIndex(0, true);
             }
         }
 
@@ -1578,13 +1560,13 @@
 
             // YT.PlayerState.ENDED === 0 -> Automatically advance to next video
             if (event.data === YT.PlayerState.ENDED) {
-                playNextVideo(true, state.isVideoExpanded);
+                playNextVideo(true);
             }
         }
 
         function onPlayerError() {
             showToast('Este video no permite reproducción integrada, saltando al siguiente...', 'warning');
-            setTimeout(() => playNextVideo(true, state.isVideoExpanded), 1200);
+            setTimeout(() => playNextVideo(true), 1200);
         }
 
         function unmuteYouTubePlayer() {
@@ -1611,14 +1593,14 @@
             dayBadge.textContent = preset ? `Rutina activa: ${preset.name}` : 'Rutina personalizada';
         }
 
-        function switchVideoPreset(presetId, autoplayFirst = false, expandFullscreen = false) {
+        function switchVideoPreset(presetId, autoplayFirst = false) {
             if (!state.presets[presetId]) return;
             state.activePresetId = presetId;
             state.currentVideoIndex = 0;
             renderPresetSelector();
             renderVideoQueueUI();
             if (autoplayFirst) {
-                playVideoAtIndex(0, true, expandFullscreen);
+                playVideoAtIndex(0, true);
             } else {
                 const videos = getActivePlaylistVideos();
                 if (state.ytReady && videos[0]) {
@@ -1629,10 +1611,10 @@
         }
 
         function onVideoPresetChange(newPresetId) {
-            switchVideoPreset(newPresetId, false, false);
+            switchVideoPreset(newPresetId, false);
         }
 
-        function playVideoAtIndex(index, autoplay = true, expandFullscreen = false) {
+        function playVideoAtIndex(index, autoplay = true) {
             const videos = getActivePlaylistVideos();
             if (!videos.length) return;
 
@@ -1641,10 +1623,6 @@
             const videoId = extractYouTubeId(target.url);
 
             renderVideoQueueUI();
-
-            if (expandFullscreen) {
-                enterVideoFullscreenMode(true);
-            }
 
             if (!state.ytReady || !state.ytPlayer) {
                 state.pendingAutoplay = autoplay;
@@ -1670,220 +1648,20 @@
             }
         }
 
-        function enterVideoFullscreenMode(tryNativeFullscreen = true) {
-            const panel = document.getElementById('video-workspace-panel');
-            const leftPanel = document.getElementById('left-productivity-panel');
-            if (!panel) return;
-
-            state.isVideoExpanded = true;
-            panel.classList.add('video-panel-fullscreen');
-            if (leftPanel) leftPanel.classList.add('hidden');
-            updateFullscreenButtonUI();
-
-            if (tryNativeFullscreen && !document.fullscreenElement && panel.requestFullscreen) {
-                panel.requestFullscreen().catch(() => {
-                    // Fallback to full-viewport Theater Mode
-                });
-            }
-        }
-
-        function exitVideoFullscreenMode() {
-            const panel = document.getElementById('video-workspace-panel');
-            const leftPanel = document.getElementById('left-productivity-panel');
-            if (!panel) return;
-
-            state.isVideoExpanded = false;
-            panel.classList.remove('video-panel-fullscreen');
-            if (leftPanel) leftPanel.classList.remove('hidden');
-            updateFullscreenButtonUI();
-
-            if (document.fullscreenElement && document.exitFullscreen) {
-                document.exitFullscreen().catch(() => {});
-            }
-        }
-
-        function toggleVideoFullscreenMode() {
-            if (state.isVideoExpanded || document.fullscreenElement) {
-                exitVideoFullscreenMode();
-            } else {
-                enterVideoFullscreenMode(true);
-            }
-        }
-
-        function updateFullscreenButtonUI() {
-            const label = document.getElementById('video-fullscreen-label');
-            const icon = document.getElementById('video-fullscreen-icon');
-            if (!label || !icon) return;
-            if (state.isVideoExpanded) {
-                label.textContent = 'Salir (ESC)';
-                icon.setAttribute('data-lucide', 'minimize-2');
-            } else {
-                label.textContent = 'Pantalla Completa';
-                icon.setAttribute('data-lucide', 'maximize-2');
-            }
-            lucide.createIcons();
-        }
-
-        // Sync state when user exits native browser fullscreen via ESC key or TV back button
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement && state.isVideoExpanded) {
-                exitVideoFullscreenMode();
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && state.isVideoExpanded) {
-                exitVideoFullscreenMode();
-            }
-        });
-
-        // =========================================================================
-        // 8. BACKGROUND PERSISTENCE: WAKE LOCK, PWA SERVICE WORKER & OS ALARMS (.ICS)
-        // =========================================================================
-        async function requestScreenWakeLock(silent = false) {
-            if (!('wakeLock' in navigator)) {
-                if (!silent) showToast('Este navegador no soporta bloqueo de suspensión de pantalla.', 'warning');
-                return;
-            }
-            try {
-                state.wakeLockSentinel = await navigator.wakeLock.request('screen');
-                updateWakeLockUI(true);
-                state.wakeLockSentinel.addEventListener('release', () => {
-                    state.wakeLockSentinel = null;
-                    updateWakeLockUI(false);
-                });
-                if (!silent) showToast('Pantalla activa fijada: la TV/PC no entrará en reposo.', 'success');
-            } catch (err) {
-                if (!silent) showToast('Haz clic en la página para activar Pantalla Activa.', 'info');
-            }
-        }
-
-        async function toggleScreenWakeLock() {
-            if (state.wakeLockSentinel) {
-                await state.wakeLockSentinel.release();
-                state.wakeLockSentinel = null;
-                updateWakeLockUI(false);
-                showToast('Bloqueo de suspensión desactivado.', 'info');
-            } else {
-                await requestScreenWakeLock(false);
-            }
-        }
-
-        function updateWakeLockUI(isActive) {
-            const btn = document.getElementById('btn-wake-lock');
-            const label = document.getElementById('wake-lock-label');
-            if (!btn || !label) return;
-            if (isActive) {
-                btn.className = 'px-2.5 py-1.5 rounded-xl bg-sky-600/25 border border-sky-500/50 text-sky-300 text-xs font-semibold flex items-center gap-1 transition';
-                label.textContent = 'Pantalla Fija ON';
-            } else {
-                btn.className = 'px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/70 text-xs font-medium flex items-center gap-1 transition';
-                label.textContent = 'Pantalla Activa';
-            }
-        }
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && !state.wakeLockSentinel) {
-                requestScreenWakeLock(true);
-            }
-        });
-
-        function registerOfflinePWAWorker() {
-            if (!('serviceWorker' in navigator)) return;
-            const swCode = `
-                const CACHE_NAME = 'rutina-diaria-pwa-v1';
-                self.addEventListener('install', (e) => {
-                    self.skipWaiting();
-                });
-                self.addEventListener('activate', (e) => {
-                    e.waitUntil(self.clients.claim());
-                });
-                self.addEventListener('fetch', (e) => {
-                    if (e.request.method !== 'GET') return;
-                    e.respondWith(
-                        fetch(e.request).catch(() => caches.match(e.request))
-                    );
-                });
-            `;
-            try {
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl).catch(() => {});
-            } catch (e) {}
-        }
-
-        function exportTasksToICS() {
-            const dates = Object.keys(state.tasksByDate).sort();
-            let eventBlocks = [];
-            const appUrl = window.location.href;
-
-            dates.forEach(dateKey => {
-                const tasks = state.tasksByDate[dateKey] || [];
-                tasks.forEach(task => {
-                    const cleanDate = dateKey.replace(/-/g, '');
-                    const startHHMM = (task.startTime || '08:00').replace(':', '') + '00';
-                    const endHHMM = (task.endTime || '08:30').replace(':', '') + '00';
-                    const presetName = task.videoPresetId && state.presets[task.videoPresetId]
-                        ? ` | Videos: ${state.presets[task.videoPresetId].name}`
-                        : '';
-
-                    eventBlocks.push([
-                        'BEGIN:VEVENT',
-                        `UID:${task.id}-${cleanDate}@rutinadiaria.pwa`,
-                        `DTSTAMP:${cleanDate}T${startHHMM}`,
-                        `DTSTART:${cleanDate}T${startHHMM}`,
-                        `DTEND:${cleanDate}T${endHHMM}`,
-                        `SUMMARY:Rutina: ${task.title}`,
-                        `DESCRIPTION:Abrir rutina y videos: ${appUrl}${presetName}`,
-                        `URL:${appUrl}`,
-                        'BEGIN:VALARM',
-                        'TRIGGER:-PT0M',
-                        'ACTION:DISPLAY',
-                        `DESCRIPTION:Inicia: ${task.title}`,
-                        'END:VALARM',
-                        'END:VEVENT'
-                    ].join('\r\n'));
-                });
-            });
-
-            if (eventBlocks.length === 0) {
-                showToast('No hay tareas programadas para exportar al calendario.', 'warning');
-                return;
-            }
-
-            const icsContent = [
-                'BEGIN:VCALENDAR',
-                'VERSION:2.0',
-                'PRODID:-//Rutina Diaria PWA//ES',
-                'CALSCALE:GREGORIAN',
-                ...eventBlocks,
-                'END:VCALENDAR'
-            ].join('\r\n');
-
-            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `Alarmas_Rutina_Diaria_${getTodayStr()}.ics`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast(`Calendario exportado (${eventBlocks.length} alarmas). Ábrelo para sincronizar con tu dispositivo.`, 'success');
-        }
-
-        function playNextVideo(autoplay = true, expandFullscreen = false) {
+        function playNextVideo(autoplay = true) {
             const videos = getActivePlaylistVideos();
             if (!videos.length) return;
             const nextIdx = state.currentVideoIndex + 1;
             if (nextIdx >= videos.length) {
                 showToast('Secuencia completada. Reiniciando desde el Video 1.', 'info');
-                playVideoAtIndex(0, autoplay, expandFullscreen);
+                playVideoAtIndex(0, autoplay);
             } else {
-                playVideoAtIndex(nextIdx, autoplay, expandFullscreen);
+                playVideoAtIndex(nextIdx, autoplay);
             }
         }
 
         function restartSequenceFromBeginning() {
-            playVideoAtIndex(0, true, false);
+            playVideoAtIndex(0, true);
         }
 
         function renderVideoQueueUI() {
@@ -1906,7 +1684,7 @@
             queueEl.innerHTML = videos.map((vid, idx) => {
                 const isActive = idx === state.currentVideoIndex;
                 return `
-                    <button onclick="playVideoAtIndex(${idx}, true, false)" class="text-left p-2.5 rounded-xl border transition flex items-start gap-2.5 ${
+                    <button onclick="playVideoAtIndex(${idx}, true)" class="text-left p-2.5 rounded-xl border transition flex items-start gap-2.5 ${
                         isActive
                             ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-sm'
                             : 'bg-zinc-950/80 border-zinc-800/90 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
@@ -1977,17 +1755,18 @@
             localStorage.setItem(STORAGE_KEYS.VIDEO_PRESETS, JSON.stringify(state.presets));
 
             closeEditPlaylistModal();
-            playVideoAtIndex(0, false, false);
+            playVideoAtIndex(0, false);
             showToast('Lista de videos actualizada y guardada.', 'success');
         }
 
         // =========================================================================
-        // 9. INITIALIZATION ON WINDOW LOAD
+        // 8. INITIALIZATION ON WINDOW LOAD
         // =========================================================================
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
 
-            // Initialize Calendar (no forced autoplaying tasks on first load)
+            // Initialize Calendar
+            seedInitialTasksIfEmpty();
             renderCalendar();
 
             // Initialize Saved Spotify Playlists Switcher
@@ -2009,12 +1788,6 @@
             // Start realtime clock & alarm monitor
             updateClockAndAlarms();
             setInterval(updateClockAndAlarms, 1000);
-
-            // Enable offline PWA Service Worker & request Screen Wake Lock on first interaction
-            registerOfflinePWAWorker();
-            document.body.addEventListener('click', () => {
-                if (!state.wakeLockSentinel) requestScreenWakeLock(true);
-            }, { once: true });
         });
     </script>
 </body>
