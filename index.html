@@ -449,6 +449,29 @@
                     </button>
                 </div>
 
+                <!-- Create & Switch Multiple Video Playlists -->
+                <div class="mt-3 pb-3 border-b border-zinc-800 space-y-2 shrink-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <label class="text-xs font-medium text-zinc-300 shrink-0">Lista activa:</label>
+                        <select id="video-playlist-select" onchange="switchVideoPlaylist(this.value)"
+                                class="flex-1 min-w-[140px] bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500">
+                        </select>
+                        <button type="button" onclick="deleteActiveVideoPlaylist()" title="Eliminar lista activa"
+                                class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-rose-950/60 text-zinc-300 hover:text-rose-300 text-xs font-medium flex items-center gap-1 transition shrink-0">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            <span>Eliminar</span>
+                        </button>
+                    </div>
+                    <form onsubmit="createVideoPlaylist(event)" class="flex items-center gap-2">
+                        <input type="text" id="new-video-playlist-name" placeholder="Nombre de nueva lista de reproducción..." required
+                               class="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
+                        <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1 transition shrink-0">
+                            <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>
+                            <span>Nueva Lista</span>
+                        </button>
+                    </form>
+                </div>
+
                 <form onsubmit="addVideoToQueue(event)" class="mt-3 space-y-2 pb-3 border-b border-zinc-800 shrink-0">
                     <div class="flex flex-col sm:flex-row gap-2">
                         <input type="text" id="new-video-title" placeholder="Título del video (opcional)"
@@ -503,7 +526,9 @@
             VIDEOS: 'rutina_pwa_videos_v1',
             VIDEO_INDEX: 'rutina_pwa_video_index_v1',
             AUTO_ADVANCE: 'rutina_pwa_auto_advance_v1',
-            ALARM_SOUND: 'rutina_pwa_alarm_sound_v1'
+            ALARM_SOUND: 'rutina_pwa_alarm_sound_v1',
+            VIDEO_PLAYLISTS: 'rutina_pwa_video_playlists_v1',
+            ACTIVE_VIDEO_PLAYLIST: 'rutina_pwa_active_video_playlist_v1'
         };
 
         const DEFAULT_SPOTIFY_LISTS = [
@@ -527,62 +552,38 @@
                 title: 'Rutina de Activación y Movilidad (10 Min)',
                 url: 'https://www.youtube.com/watch?v=inpok4MKVLM',
                 platform: 'youtube',
-                youtubeId: 'inpok4MKVLM'
+                youtubeId: 'inpok4MKVLM',
+                label: 'YouTube'
             },
             {
                 id: 'vid_2',
                 title: 'Enfoque Profundo - Música Ambiental',
                 url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
                 platform: 'youtube',
-                youtubeId: 'jfKfPfyJRdk'
+                youtubeId: 'jfKfPfyJRdk',
+                label: 'YouTube'
             },
             {
                 id: 'vid_3',
                 title: 'Estiramiento y Relajación Guiada',
                 url: 'https://www.youtube.com/watch?v=sTANio_2E0Q',
                 platform: 'youtube',
-                youtubeId: 'sTANio_2E0Q'
+                youtubeId: 'sTANio_2E0Q',
+                label: 'YouTube'
             },
             {
                 id: 'vid_4',
                 title: 'Respiración Consciente para Resetear',
                 url: 'https://www.youtube.com/watch?v=tybOi4hjZFQ',
                 platform: 'youtube',
-                youtubeId: 'tybOi4hjZFQ'
+                youtubeId: 'tybOi4hjZFQ',
+                label: 'YouTube'
             }
         ];
 
         // =====================================================================
         // APPLICATION STATE
         // =====================================================================
-        let selectedDateStr = formatDateToISO(new Date());
-        let tasksByDate = loadJSON(STORAGE_KEYS.TASKS, {});
-        let spotifyLists = loadJSON(STORAGE_KEYS.SPOTIFY_LISTS, DEFAULT_SPOTIFY_LISTS);
-        if (!Array.isArray(spotifyLists)) {
-            spotifyLists = [...DEFAULT_SPOTIFY_LISTS];
-        }
-        let activeSpotifyId = localStorage.getItem(STORAGE_KEYS.SPOTIFY_ACTIVE) || (spotifyLists[0] && spotifyLists[0].id) || '';
-        let surveysByDate = loadJSON(STORAGE_KEYS.SURVEYS, {});
-        let selectedSurveyStatus = null;
-        let videoQueue = loadJSON(STORAGE_KEYS.VIDEOS, DEFAULT_VIDEOS);
-        if (!Array.isArray(videoQueue) || videoQueue.length === 0) {
-            videoQueue = [...DEFAULT_VIDEOS];
-        }
-        let currentVideoIndex = parseInt(localStorage.getItem(STORAGE_KEYS.VIDEO_INDEX) || '0', 10);
-        if (Number.isNaN(currentVideoIndex) || currentVideoIndex < 0 || currentVideoIndex >= videoQueue.length) {
-            currentVideoIndex = 0;
-        }
-        let autoAdvance = localStorage.getItem(STORAGE_KEYS.AUTO_ADVANCE) !== 'false';
-        let alarmSoundEnabled = localStorage.getItem(STORAGE_KEYS.ALARM_SOUND) !== 'false';
-
-        let ytPlayer = null;
-        let ytApiReady = false;
-        let socialTimerInterval = null;
-        let socialSecondsRemaining = 30;
-        let triggeredAlarmKeys = new Set();
-        let triggeredAutoVideoKeys = new Set();
-        let alarmAudioCtx = null;
-
         function loadJSON(key, fallback) {
             try {
                 const raw = localStorage.getItem(key);
@@ -600,9 +601,6 @@
             }
         }
 
-        // =====================================================================
-        // DATE & CLOCK HELPERS
-        // =====================================================================
         function formatDateToISO(date) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -610,6 +608,64 @@
             return `${y}-${m}-${d}`;
         }
 
+        let selectedDateStr = formatDateToISO(new Date());
+        let tasksByDate = loadJSON(STORAGE_KEYS.TASKS, {});
+        let spotifyLists = loadJSON(STORAGE_KEYS.SPOTIFY_LISTS, DEFAULT_SPOTIFY_LISTS);
+        if (!Array.isArray(spotifyLists)) {
+            spotifyLists = [...DEFAULT_SPOTIFY_LISTS];
+        }
+        let activeSpotifyId = localStorage.getItem(STORAGE_KEYS.SPOTIFY_ACTIVE) || (spotifyLists[0] && spotifyLists[0].id) || '';
+        let surveysByDate = loadJSON(STORAGE_KEYS.SURVEYS, {});
+        let selectedSurveyStatus = null;
+
+        let currentVideoIndex = parseInt(localStorage.getItem(STORAGE_KEYS.VIDEO_INDEX) || '0', 10);
+        if (Number.isNaN(currentVideoIndex) || currentVideoIndex < 0) {
+            currentVideoIndex = 0;
+        }
+
+        let videoPlaylists = loadJSON(STORAGE_KEYS.VIDEO_PLAYLISTS, null);
+        if (!Array.isArray(videoPlaylists) || videoPlaylists.length === 0) {
+            const savedQueue = loadJSON(STORAGE_KEYS.VIDEOS, DEFAULT_VIDEOS);
+            videoPlaylists = [
+                {
+                    id: 'vpl_default',
+                    name: 'Lista Principal',
+                    videos: Array.isArray(savedQueue) && savedQueue.length > 0 ? savedQueue : [...DEFAULT_VIDEOS],
+                    index: currentVideoIndex
+                }
+            ];
+        }
+
+        let activeVideoPlaylistId = localStorage.getItem(STORAGE_KEYS.ACTIVE_VIDEO_PLAYLIST) || videoPlaylists[0].id;
+        if (!videoPlaylists.some(pl => pl.id === activeVideoPlaylistId)) {
+            activeVideoPlaylistId = videoPlaylists[0].id;
+        }
+
+        function getActiveVideoPlaylist() {
+            return videoPlaylists.find(pl => pl.id === activeVideoPlaylistId) || videoPlaylists[0];
+        }
+
+        let initialPlaylist = getActiveVideoPlaylist();
+        let videoQueue = Array.isArray(initialPlaylist.videos) ? initialPlaylist.videos : [...DEFAULT_VIDEOS];
+        currentVideoIndex = typeof initialPlaylist.index === 'number' ? initialPlaylist.index : 0;
+        if (currentVideoIndex < 0 || currentVideoIndex >= videoQueue.length) {
+            currentVideoIndex = 0;
+        }
+
+        let autoAdvance = localStorage.getItem(STORAGE_KEYS.AUTO_ADVANCE) !== 'false';
+        let alarmSoundEnabled = localStorage.getItem(STORAGE_KEYS.ALARM_SOUND) !== 'false';
+
+        let ytPlayer = null;
+        let ytApiReady = false;
+        let socialTimerInterval = null;
+        let socialSecondsRemaining = 30;
+        let triggeredAlarmKeys = new Set();
+        let triggeredAutoVideoKeys = new Set();
+        let alarmAudioCtx = null;
+
+        // =====================================================================
+        // DATE & CLOCK HELPERS
+        // =====================================================================
         function parseISODate(isoStr) {
             const parts = String(isoStr || '').split('-').map(Number);
             if (parts.length === 3 && !parts.some(Number.isNaN)) {
@@ -821,7 +877,7 @@
             for (let i = 0; i < 28; i++) {
                 const candidate = new Date(base);
                 candidate.setDate(base.getDate() + i);
-                const dow = candidate.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+                const dow = candidate.getDay();
 
                 let matches = false;
                 if (groupMode === 'weekdays') {
@@ -989,6 +1045,8 @@
                 spotifyLists,
                 activeSpotifyId,
                 videoQueue,
+                videoPlaylists,
+                activeVideoPlaylistId,
                 currentVideoIndex
             });
         }
@@ -1120,7 +1178,30 @@
                 saveJSON(STORAGE_KEYS.SPOTIFY_LISTS, spotifyLists);
             }
 
-            if (Array.isArray(parsed.videoQueue) && parsed.videoQueue.length > 0) {
+            if (Array.isArray(parsed.videoPlaylists) && parsed.videoPlaylists.length > 0) {
+                const existingPlIds = new Set(videoPlaylists.map(p => p.id));
+                parsed.videoPlaylists.forEach(pl => {
+                    if (!pl || !pl.name) return;
+                    const id = pl.id || ('vpl_imp_' + Math.random().toString(36).slice(2, 8));
+                    if (!existingPlIds.has(id)) {
+                        videoPlaylists.push({
+                            id,
+                            name: String(pl.name),
+                            videos: Array.isArray(pl.videos) ? pl.videos : [],
+                            index: typeof pl.index === 'number' ? pl.index : 0
+                        });
+                        existingPlIds.add(id);
+                    }
+                });
+                if (parsed.activeVideoPlaylistId && videoPlaylists.some(p => p.id === parsed.activeVideoPlaylistId)) {
+                    activeVideoPlaylistId = parsed.activeVideoPlaylistId;
+                    localStorage.setItem(STORAGE_KEYS.ACTIVE_VIDEO_PLAYLIST, activeVideoPlaylistId);
+                }
+                saveJSON(STORAGE_KEYS.VIDEO_PLAYLISTS, videoPlaylists);
+                const currentPl = getActiveVideoPlaylist();
+                videoQueue = Array.isArray(currentPl.videos) ? currentPl.videos : [];
+                currentVideoIndex = typeof currentPl.index === 'number' ? currentPl.index : 0;
+            } else if (Array.isArray(parsed.videoQueue) && parsed.videoQueue.length > 0) {
                 const existingIds = new Set(videoQueue.map(v => v.id));
                 const existingUrls = new Set(videoQueue.map(v => v.url));
                 parsed.videoQueue.forEach(vid => {
@@ -1139,11 +1220,12 @@
                         existingUrls.add(vid.url);
                     }
                 });
-                saveJSON(STORAGE_KEYS.VIDEOS, videoQueue);
-                if (typeof parsed.currentVideoIndex === 'number' && parsed.currentVideoIndex >= 0 && parsed.currentVideoIndex < videoQueue.length) {
-                    currentVideoIndex = parsed.currentVideoIndex;
-                    localStorage.setItem(STORAGE_KEYS.VIDEO_INDEX, String(currentVideoIndex));
-                }
+                syncActivePlaylistWithQueue();
+            }
+
+            if (typeof parsed.currentVideoIndex === 'number' && parsed.currentVideoIndex >= 0 && parsed.currentVideoIndex < videoQueue.length) {
+                currentVideoIndex = parsed.currentVideoIndex;
+                localStorage.setItem(STORAGE_KEYS.VIDEO_INDEX, String(currentVideoIndex));
             }
 
             renderCalendarHeaderAndStrip();
@@ -1151,6 +1233,7 @@
             renderSpotifySection();
             updateSurveySummaryFromTasks();
             loadSurveyForSelectedDate();
+            renderVideoPlaylistSelect();
             loadVideoAtIndex(currentVideoIndex, false);
             refreshSyncCodeField();
         }
@@ -1423,8 +1506,128 @@
         }
 
         // =====================================================================
-        // VIDEO QUEUE PLAYER (YOUTUBE / REELS / MP4)
+        // MULTIPLE VIDEO PLAYLISTS & PLAYER (YOUTUBE / REELS / MP4)
         // =====================================================================
+        function syncActivePlaylistWithQueue() {
+            const activePl = getActiveVideoPlaylist();
+            if (!activePl) return;
+            activePl.videos = videoQueue;
+            activePl.index = currentVideoIndex;
+            saveJSON(STORAGE_KEYS.VIDEO_PLAYLISTS, videoPlaylists);
+            saveJSON(STORAGE_KEYS.VIDEOS, videoQueue);
+            localStorage.setItem(STORAGE_KEYS.ACTIVE_VIDEO_PLAYLIST, activeVideoPlaylistId);
+        }
+
+        function renderVideoPlaylistSelect() {
+            const select = document.getElementById('video-playlist-select');
+            if (!select) return;
+            select.innerHTML = videoPlaylists.map(pl => {
+                const count = Array.isArray(pl.videos) ? pl.videos.length : 0;
+                const selected = pl.id === activeVideoPlaylistId ? 'selected' : '';
+                return `<option value="${escapeHtml(pl.id)}" ${selected}>${escapeHtml(pl.name)} (${count})</option>`;
+            }).join('');
+        }
+
+        function createVideoPlaylist(event) {
+            event.preventDefault();
+            const input = document.getElementById('new-video-playlist-name');
+            const name = input ? input.value.trim() : '';
+            if (!name) return;
+
+            syncActivePlaylistWithQueue();
+
+            const newPlaylist = {
+                id: 'vpl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                name,
+                videos: [],
+                index: 0
+            };
+
+            videoPlaylists.push(newPlaylist);
+            activeVideoPlaylistId = newPlaylist.id;
+            videoQueue = [];
+            currentVideoIndex = 0;
+
+            saveJSON(STORAGE_KEYS.VIDEO_PLAYLISTS, videoPlaylists);
+            saveJSON(STORAGE_KEYS.VIDEOS, videoQueue);
+            localStorage.setItem(STORAGE_KEYS.ACTIVE_VIDEO_PLAYLIST, activeVideoPlaylistId);
+            localStorage.setItem(STORAGE_KEYS.VIDEO_INDEX, '0');
+
+            if (input) input.value = '';
+            renderVideoPlaylistSelect();
+            renderEmptyVideoPlaylistStage(newPlaylist.name);
+            renderQueueDrawerItems();
+            safeRefreshIcons();
+        }
+
+        function switchVideoPlaylist(playlistId) {
+            if (!videoPlaylists.some(pl => pl.id === playlistId)) return;
+            syncActivePlaylistWithQueue();
+
+            activeVideoPlaylistId = playlistId;
+            localStorage.setItem(STORAGE_KEYS.ACTIVE_VIDEO_PLAYLIST, activeVideoPlaylistId);
+
+            const nextPl = getActiveVideoPlaylist();
+            videoQueue = Array.isArray(nextPl.videos) ? nextPl.videos : [];
+            currentVideoIndex = typeof nextPl.index === 'number' ? nextPl.index : 0;
+            if (currentVideoIndex < 0 || currentVideoIndex >= videoQueue.length) {
+                currentVideoIndex = 0;
+            }
+
+            saveJSON(STORAGE_KEYS.VIDEOS, videoQueue);
+            localStorage.setItem(STORAGE_KEYS.VIDEO_INDEX, String(currentVideoIndex));
+            renderVideoPlaylistSelect();
+
+            if (videoQueue.length > 0) {
+                loadVideoAtIndex(currentVideoIndex, false);
+            } else {
+                renderEmptyVideoPlaylistStage(nextPl.name);
+                renderQueueDrawerItems();
+            }
+        }
+
+        function deleteActiveVideoPlaylist() {
+            if (videoPlaylists.length <= 1) return;
+            videoPlaylists = videoPlaylists.filter(pl => pl.id !== activeVideoPlaylistId);
+            const nextPl = videoPlaylists[0];
+            activeVideoPlaylistId = nextPl.id;
+
+            saveJSON(STORAGE_KEYS.VIDEO_PLAYLISTS, videoPlaylists);
+            localStorage.setItem(STORAGE_KEYS.ACTIVE_VIDEO_PLAYLIST, activeVideoPlaylistId);
+
+            videoQueue = Array.isArray(nextPl.videos) ? nextPl.videos : [];
+            currentVideoIndex = typeof nextPl.index === 'number' ? nextPl.index : 0;
+            if (currentVideoIndex < 0 || currentVideoIndex >= videoQueue.length) {
+                currentVideoIndex = 0;
+            }
+
+            saveJSON(STORAGE_KEYS.VIDEOS, videoQueue);
+            localStorage.setItem(STORAGE_KEYS.VIDEO_INDEX, String(currentVideoIndex));
+            renderVideoPlaylistSelect();
+
+            if (videoQueue.length > 0) {
+                loadVideoAtIndex(currentVideoIndex, false);
+            } else {
+                renderEmptyVideoPlaylistStage(nextPl.name);
+                renderQueueDrawerItems();
+            }
+        }
+
+        function renderEmptyVideoPlaylistStage(playlistName) {
+            clearSocialTimer();
+            const stage = document.getElementById('video-stage');
+            const counterBadge = document.getElementById('video-counter-badge');
+            const titleEl = document.getElementById('current-video-title');
+            const countEl = document.getElementById('queue-count');
+
+            if (counterBadge) counterBadge.textContent = 'Video 0 de 0';
+            if (titleEl) titleEl.textContent = `${playlistName} (vacía)`;
+            if (countEl) countEl.textContent = '0';
+            if (stage) {
+                stage.innerHTML = `<p class="text-xs text-zinc-400 px-4 text-center">Esta lista de reproducción está vacía. Agrega videos para comenzar.</p>`;
+            }
+        }
+
         function parseVideoUrl(rawUrl) {
             const url = String(rawUrl || '').trim();
             if (!url) return null;
@@ -1475,9 +1678,15 @@
         }
 
         function loadVideoAtIndex(idx, autoplay = false) {
-            if (videoQueue.length === 0) return;
+            if (videoQueue.length === 0) {
+                const activePl = getActiveVideoPlaylist();
+                renderEmptyVideoPlaylistStage(activePl ? activePl.name : 'Lista');
+                renderQueueDrawerItems();
+                return;
+            }
             currentVideoIndex = ((idx % videoQueue.length) + videoQueue.length) % videoQueue.length;
             localStorage.setItem(STORAGE_KEYS.VIDEO_INDEX, String(currentVideoIndex));
+            syncActivePlaylistWithQueue();
 
             clearSocialTimer();
             const video = videoQueue[currentVideoIndex];
@@ -1614,6 +1823,7 @@
             if (!drawer) return;
             drawer.classList.toggle('hidden');
             if (!drawer.classList.contains('hidden')) {
+                renderVideoPlaylistSelect();
                 renderQueueDrawerItems();
             }
             safeRefreshIcons();
@@ -1648,24 +1858,33 @@
             };
 
             videoQueue.push(item);
-            saveJSON(STORAGE_KEYS.VIDEOS, videoQueue);
+            syncActivePlaylistWithQueue();
 
             if (titleInput) titleInput.value = '';
             if (urlInput) urlInput.value = '';
 
             const newIndex = videoQueue.length - 1;
+            renderVideoPlaylistSelect();
             loadVideoAtIndex(newIndex, false);
         }
 
         function deleteVideoFromQueue(index) {
-            if (videoQueue.length <= 1) return;
+            if (index < 0 || index >= videoQueue.length) return;
             videoQueue.splice(index, 1);
-            saveJSON(STORAGE_KEYS.VIDEOS, videoQueue);
 
             if (currentVideoIndex >= videoQueue.length) {
                 currentVideoIndex = 0;
             }
-            loadVideoAtIndex(currentVideoIndex, false);
+            syncActivePlaylistWithQueue();
+            renderVideoPlaylistSelect();
+
+            if (videoQueue.length > 0) {
+                loadVideoAtIndex(currentVideoIndex, false);
+            } else {
+                const activePl = getActiveVideoPlaylist();
+                renderEmptyVideoPlaylistStage(activePl ? activePl.name : 'Lista');
+                renderQueueDrawerItems();
+            }
         }
 
         function renderQueueDrawerItems() {
@@ -1673,6 +1892,12 @@
             const countEl = document.getElementById('queue-count');
             if (countEl) countEl.textContent = String(videoQueue.length);
             if (!container) return;
+
+            if (videoQueue.length === 0) {
+                container.innerHTML = `<p class="text-xs text-zinc-500 text-center py-6">No hay videos en esta lista. Agrega un enlace arriba.</p>`;
+                safeRefreshIcons();
+                return;
+            }
 
             container.innerHTML = videoQueue.map((vid, idx) => {
                 const active = idx === currentVideoIndex;
@@ -1687,12 +1912,10 @@
                                 <p class="text-[10px] text-zinc-400 truncate">${escapeHtml(vid.label || vid.platform)} · ${escapeHtml(vid.url)}</p>
                             </div>
                         </button>
-                        ${videoQueue.length > 1 ? `
-                            <button type="button" onclick="deleteVideoFromQueue(${idx})" title="Quitar video"
-                                    class="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-950/40 transition shrink-0">
-                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                            </button>
-                        ` : ''}
+                        <button type="button" onclick="deleteVideoFromQueue(${idx})" title="Quitar video"
+                                class="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-950/40 transition shrink-0">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
                     </div>
                 `;
             }).join('');
@@ -1727,7 +1950,9 @@
             renderCalendarHeaderAndStrip();
             renderDailyTasks();
             renderSpotifySection();
+            updateSurveySummaryFromTasks();
             loadSurveyForSelectedDate();
+            renderVideoPlaylistSelect();
             loadVideoAtIndex(currentVideoIndex, false);
             updateClockAndAlarms();
             setInterval(updateClockAndAlarms, 1000);
