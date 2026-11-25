@@ -21,6 +21,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <script>
+        // Configure Tailwind dark mode and custom palette
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -41,7 +42,7 @@
     </script>
 
     <style>
-        /* Custom Scrollbar for sleek dark UI */
+        /* Custom scrollbar for dark UI */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -58,7 +59,7 @@
             background: #52525b;
         }
 
-        /* Ensure embedded players fill stage */
+        /* Responsive media stage */
         .video-wrapper iframe,
         .video-wrapper video {
             width: 100%;
@@ -73,11 +74,11 @@
     <div class="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row">
 
         <!-- ========================================================= -->
-        <!-- LEFT HALF: CALENDAR, SPOTIFY PLAYLISTS & DAILY EVALUATION  -->
+        <!-- LEFT PANEL: Calendar & Tasks, Spotify Lists, Daily Survey -->
         <!-- ========================================================= -->
         <aside class="w-full lg:w-1/2 lg:h-full flex flex-col gap-3 p-3 sm:p-4 bg-zinc-950 border-b lg:border-b-0 lg:border-r border-zinc-800/80 lg:overflow-y-auto">
 
-            <!-- Top App Bar -->
+            <!-- Top Header -->
             <header class="flex items-center justify-between px-1 shrink-0">
                 <div class="flex items-center gap-2.5">
                     <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
@@ -97,8 +98,9 @@
                 </div>
             </header>
 
-            <!-- SECTION 1: Daily Calendar & Tasks -->
-            <section class="flex-1 min-h-[280px] lg:min-h-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col shadow-xl overflow-hidden">
+            <!-- SECTION 1: Daily Calendar, Task Groups & Sync -->
+            <section class="flex-1 min-h-[290px] lg:min-h-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col shadow-xl overflow-hidden">
+                <!-- Header & Controls -->
                 <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-zinc-800/80 shrink-0">
                     <div class="flex items-center gap-2">
                         <div class="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-400">
@@ -110,27 +112,29 @@
                         </div>
                     </div>
 
-                    <!-- Alarm & Date Controls -->
                     <div class="flex flex-wrap items-center gap-1.5">
+                        <!-- Alarm Sound & Test -->
                         <div class="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
-                            <button type="button" onclick="exportTasksFile()" title="Exportar tareas a archivo JSON para otros dispositivos"
-                                    class="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 text-[11px] font-medium flex items-center gap-1 transition">
-                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                                <span class="hidden sm:inline">Exportar</span>
+                            <button type="button" id="alarm-sound-toggle-btn" onclick="toggleAlarmSound()" title="Activar o silenciar alarmas"
+                                    class="px-2 py-1 rounded-lg bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 text-[11px] font-medium flex items-center gap-1 transition">
+                                <i id="alarm-sound-icon" data-lucide="bell-ring" class="w-3.5 h-3.5"></i>
+                                <span id="alarm-sound-label" class="hidden sm:inline">Alarmas ON</span>
                             </button>
-                            <button type="button" onclick="triggerImportTasksFile()" title="Importar tareas desde otro dispositivo"
-                                    class="px-2 py-1 rounded-lg bg-sky-500/15 text-sky-300 hover:bg-sky-500/25 text-[11px] font-medium flex items-center gap-1 transition">
-                                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
-                                <span class="hidden sm:inline">Importar</span>
-                            </button>
-                            <button type="button" onclick="toggleSyncCodePanel()" title="Copiar o pegar código de sincronización entre dispositivos"
+                            <button type="button" onclick="triggerTestAlarm()" title="Probar sonido y notificación de alarma"
                                     class="px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium flex items-center gap-1 transition">
-                                <i data-lucide="share-2" class="w-3.5 h-3.5 text-indigo-400"></i>
-                                <span class="hidden md:inline">Sincronizar</span>
+                                <i data-lucide="volume-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                <span class="hidden md:inline">Probar</span>
                             </button>
-                            <input type="file" id="import-tasks-file-input" accept="application/json,.json" onchange="importTasksFromFile(event)" class="hidden">
                         </div>
 
+                        <!-- Export / Import / Sync Toggle -->
+                        <button type="button" onclick="toggleSyncPanel()" title="Exportar o sincronizar tareas entre dispositivos"
+                                class="px-2.5 py-1.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 text-[11px] font-medium flex items-center gap-1 transition">
+                            <i data-lucide="share-2" class="w-3.5 h-3.5 text-indigo-400"></i>
+                            <span>Sincronizar</span>
+                        </button>
+
+                        <!-- Date Controls -->
                         <div class="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
                             <button type="button" onclick="changeDay(-1)" title="Día anterior" class="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition">
                                 <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
@@ -147,114 +151,129 @@
                     </div>
                 </div>
 
-                <!-- Quick Week Strip -->
-                <div id="week-strip" class="grid grid-cols-7 gap-1 py-2 shrink-0"></div>
-
-                <!-- Portable Sync Code Panel (Export / Import between devices) -->
-                <div id="task-sync-panel" class="hidden mb-2 p-2.5 rounded-xl bg-zinc-950 border border-indigo-500/30 space-y-2 shrink-0">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-[11px] font-semibold text-indigo-300">Código portátil de tareas (copiar / pegar entre dispositivos)</span>
-                        <div class="flex items-center gap-1">
-                            <button type="button" onclick="copySyncCodeToClipboard()" class="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold transition">
-                                Copiar código
+                <!-- Collapsible Export / Import / Sync Panel -->
+                <div id="sync-tasks-panel" class="hidden my-2 p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2 shrink-0">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-[11px] font-semibold text-indigo-300">Exportar o sincronizar tareas entre dispositivos</span>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="exportTasksJson()"
+                                    class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold flex items-center gap-1 transition">
+                                <i data-lucide="download" class="w-3 h-3"></i>
+                                <span>Descargar JSON</span>
                             </button>
-                            <button type="button" onclick="applySyncCodeFromTextarea()" class="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold transition">
-                                Aplicar código
-                            </button>
-                            <button type="button" onclick="toggleSyncCodePanel()" title="Cerrar" class="p-1 rounded-lg text-zinc-400 hover:text-white">
-                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                            </button>
+                            <label class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium flex items-center gap-1 cursor-pointer transition">
+                                <i data-lucide="upload" class="w-3 h-3 text-emerald-400"></i>
+                                <span>Importar JSON</span>
+                                <input type="file" id="import-tasks-file" accept=".json,application/json" onchange="importTasksFromFile(event)" class="hidden">
+                            </label>
                         </div>
                     </div>
-                    <textarea id="task-sync-textarea" rows="2" placeholder="Aquí aparece tu código de tareas o pega el código exportado desde otro dispositivo..."
-                              class="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-[11px] font-mono text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"></textarea>
-                    <p id="task-sync-feedback" class="text-[11px] text-emerald-400 hidden"></p>
-                </div>
-
-                <!-- Add Task Form with Day Groups & Auto-Video Toggle -->
-                <form id="add-task-form" onsubmit="addDailyTask(event)" class="flex flex-wrap items-center gap-1.5 mb-2 shrink-0">
-                    <div class="flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 shrink-0">
-                        <span class="text-[10px] text-zinc-500 font-medium">De</span>
-                        <input type="time" id="task-start-input" value="07:30" required aria-label="Hora de inicio"
-                               class="bg-transparent text-xs text-zinc-200 focus:outline-none [color-scheme:dark]">
-                        <span class="text-[10px] text-zinc-500 font-medium">a</span>
-                        <input type="time" id="task-end-input" value="08:00" required aria-label="Hora de fin"
-                               class="bg-transparent text-xs text-zinc-200 focus:outline-none [color-scheme:dark]">
-                    </div>
-
-                    <input type="text" id="task-text-input" placeholder="Ej. Estiramiento matutino..." required
-                           class="flex-1 min-w-[140px] bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500">
-
-                    <select id="task-group-select" title="Repetir en grupo de días"
-                            class="bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-indigo-300 font-medium focus:outline-none focus:border-indigo-500 shrink-0">
-                        <option value="single">Solo este día</option>
-                        <option value="weekdays">Lunes a viernes</option>
-                        <option value="mwf">Lunes, miércoles y viernes</option>
-                        <option value="tt">Martes y jueves</option>
-                        <option value="all_week">Toda la semana</option>
-                    </select>
-
-                    <label title="Iniciar automáticamente la lista de videos al comenzar esta tarea"
-                           class="inline-flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-[11px] text-amber-300 font-medium cursor-pointer select-none shrink-0">
-                        <input type="checkbox" id="task-auto-video-checkbox" class="rounded accent-amber-500 cursor-pointer">
-                        <span>Auto-video</span>
-                    </label>
-
-                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1 transition shrink-0">
-                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                        <span>Agregar</span>
-                    </button>
-                </form>
-
-                <!-- Daily Tasks List -->
-                <ul id="daily-tasks-list" role="list" class="flex-1 min-h-[120px] overflow-y-auto space-y-1.5 pr-1 list-none m-0 p-0"></ul>
-            </section>
-
-            <!-- SECTION 2: Spotify Playlists Manager & Embed -->
-            <section class="flex-1 min-h-[235px] lg:min-h-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl overflow-hidden">
-                <div class="flex items-center justify-between gap-2 mb-2 shrink-0">
-                    <div class="flex items-center gap-2">
-                        <div class="p-1.5 rounded-lg bg-[#1DB954]/15 text-[#1DB954]">
-                            <i data-lucide="music" class="w-4 h-4"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-xs sm:text-sm font-semibold text-zinc-100 leading-none">Mis Playlists de Spotify</h2>
-                            <p class="text-[11px] text-zinc-400 mt-0.5">Selecciona o elimina listas en cualquier momento</p>
-                        </div>
-                    </div>
-
                     <div class="flex items-center gap-1.5">
-                        <button type="button" onclick="toggleSpotifyInput()" class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition" title="Agregar nueva playlist">
-                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                            <span>Agregar Playlist</span>
+                        <input type="text" id="sync-code-field" placeholder="Código portátil de tareas para copiar o pegar en otro dispositivo..."
+                               class="flex-1 min-w-0 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-[11px] text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500">
+                        <button type="button" onclick="copySyncCode()"
+                                class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium shrink-0 transition">
+                            Copiar
+                        </button>
+                        <button type="button" onclick="applySyncCode()"
+                                class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold shrink-0 transition">
+                            Aplicar
                         </button>
                     </div>
+                    <p id="sync-status-message" class="text-[11px] text-zinc-400 hidden"></p>
                 </div>
+
+                <!-- Quick 7-Day Strip -->
+                <div id="week-strip" class="grid grid-cols-7 gap-1 py-2 shrink-0"></div>
+
+                <!-- Add Task Form with Group Day Options -->
+                <form onsubmit="addDailyTask(event)" class="space-y-1.5 mb-2 shrink-0">
+                    <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5">
+                        <div class="flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 shrink-0" title="Hora de inicio y fin">
+                            <span class="text-[10px] text-zinc-500 font-medium">De</span>
+                            <input type="time" id="task-start-input" value="07:30" required aria-label="Hora de inicio"
+                                   class="bg-transparent text-xs text-zinc-200 focus:outline-none [color-scheme:dark]">
+                            <span class="text-[10px] text-zinc-500 font-medium">a</span>
+                            <input type="time" id="task-end-input" value="08:00" required aria-label="Hora de fin"
+                                   class="bg-transparent text-xs text-zinc-200 focus:outline-none [color-scheme:dark]">
+                        </div>
+                        <input type="text" id="task-text-input" placeholder="Ej. Estiramiento matutino..." required
+                               class="flex-1 min-w-[130px] bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500">
+                        <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-1 transition shrink-0">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Agregar</span>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-1.5">
+                        <label class="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                            <i data-lucide="repeat" class="w-3.5 h-3.5 text-indigo-400"></i>
+                            <span>Repetir en:</span>
+                            <select id="task-group-select"
+                                    class="bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 text-[11px] text-zinc-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                                <option value="single">Solo este día</option>
+                                <option value="weekdays">Lunes a viernes (4 sem.)</option>
+                                <option value="mwf">Lunes, miércoles y viernes (4 sem.)</option>
+                                <option value="tth">Martes y jueves (4 sem.)</option>
+                                <option value="all_week">Toda la semana (4 sem.)</option>
+                            </select>
+                        </label>
+
+                        <label class="flex items-center gap-1.5 text-[11px] text-zinc-300 cursor-pointer select-none" title="Inicia automáticamente la reproducción de videos al comenzar la tarea">
+                            <input type="checkbox" id="task-autovideo-input" class="rounded border-zinc-700 bg-zinc-950 text-emerald-500 focus:ring-0">
+                            <span class="text-emerald-400 font-medium">Auto-Video al iniciar</span>
+                        </label>
+                    </div>
+                </form>
+
+                <!-- Always-Visible Tasks List -->
+                <div id="daily-tasks-list" class="flex-1 overflow-y-auto pr-1"></div>
+            </section>
+
+            <!-- SECTION 2: Spotify Playlists (Add, Switch & Delete) -->
+            <section class="flex-1 min-h-[245px] lg:min-h-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl overflow-hidden">
+                <div class="flex items-center justify-between gap-2 mb-2 shrink-0">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <div class="p-1.5 rounded-lg bg-[#1DB954]/15 text-[#1DB954] shrink-0">
+                            <i data-lucide="music" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h2 class="text-xs sm:text-sm font-semibold text-zinc-100 leading-none truncate">Mis Playlists de Spotify</h2>
+                            <p id="spotify-active-title" class="text-[11px] text-zinc-400 mt-0.5 truncate">Cargando playlist...</p>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="toggleSpotifyInput()"
+                            class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition shrink-0">
+                        <i data-lucide="plus" class="w-3.5 h-3.5 text-[#1DB954]"></i>
+                        <span>Agregar Playlist</span>
+                    </button>
+                </div>
+
+                <!-- Saved Playlists Pills with Delete Button -->
+                <div id="spotify-playlists-bar" class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 border-b border-zinc-800/70 shrink-0"></div>
 
                 <!-- Add Playlist Form -->
                 <div id="spotify-url-form" class="hidden mb-2 shrink-0">
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5">
-                        <input type="text" id="spotify-name-input" placeholder="Nombre de playlist (opcional)..."
-                               class="sm:w-44 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-[#1DB954]">
-                        <input type="url" id="spotify-url-input" placeholder="Pega aquí el enlace de tu playlist de Spotify..."
-                               onkeydown="if(event.key==='Enter'){event.preventDefault();saveSpotifyPlaylist();}"
+                        <input type="text" id="spotify-name-input" placeholder="Nombre (opcional)"
+                               class="sm:w-36 bg-zinc-950 border border-zinc-700 rounded-xl px-2.5 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-[#1DB954]">
+                        <input type="url" id="spotify-url-input" placeholder="Pega enlace de Spotify (playlist, artista, show, álbum...)"
                                class="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-[#1DB954]">
-                        <button type="button" onclick="saveSpotifyPlaylist()" class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-semibold transition shrink-0">
+                        <button type="button" onclick="saveSpotifyPlaylist()"
+                                class="px-3 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-zinc-950 text-xs font-semibold transition shrink-0">
                             Guardar
                         </button>
                     </div>
                     <p id="spotify-url-error" class="hidden text-[11px] text-rose-400 mt-1">
-                        Pega un enlace válido de Spotify (playlist, álbum, canción o episodio).
+                        Pega un enlace válido de Spotify (playlist, artista, álbum, canción o show).
                     </p>
                 </div>
 
-                <!-- Saved Spotify Playlists Pills -->
-                <div id="spotify-playlists-bar" class="flex flex-wrap items-center gap-1.5 mb-2 shrink-0"></div>
-
                 <!-- Spotify Embed Player -->
-                <div id="spotify-embed-wrapper" class="flex-1 w-full rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800/80 min-h-[140px]">
+                <div class="flex-1 w-full rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800/80 min-h-[152px]">
                     <iframe id="spotify-embed-iframe"
-                            src="https://open.spotify.com/embed/playlist/37i9dQZF1DX8NTLI2TtZa6?utm_source=generator&theme=0"
+                            src=""
                             width="100%"
                             height="100%"
                             frameborder="0"
@@ -266,8 +285,8 @@
                 </div>
             </section>
 
-            <!-- SECTION 3: Daily Self-Evaluation Survey -->
-            <section class="flex-1 min-h-[210px] lg:min-h-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl overflow-hidden">
+            <!-- SECTION 3: Daily Task Completion Survey -->
+            <section class="flex-1 min-h-[215px] lg:min-h-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl overflow-hidden">
                 <div class="flex items-center justify-between gap-2 pb-2 border-b border-zinc-800/80 shrink-0">
                     <div class="flex items-center gap-2 min-w-0">
                         <div class="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 shrink-0">
@@ -326,15 +345,16 @@
                     </button>
                 </form>
             </section>
+
         </aside>
 
         <!-- ========================================================= -->
-        <!-- RIGHT HALF: SEQUENTIAL VIDEO PLAYER & TASK LINK AUTOMATION -->
+        <!-- RIGHT PANEL: Video Routine Player & Queue Drawer          -->
         <!-- ========================================================= -->
         <main class="w-full lg:w-1/2 min-h-[540px] lg:h-full flex flex-col bg-zinc-925 p-3 sm:p-4 relative">
 
-            <!-- Video Player Top Control Bar -->
-            <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 shrink-0">
+            <!-- Top Video Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 shrink-0">
                 <div class="flex items-center gap-2.5 min-w-0">
                     <div class="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 shrink-0">
                         <i data-lucide="play-circle" class="w-5 h-5"></i>
@@ -371,7 +391,7 @@
                 </div>
             </div>
 
-            <!-- Main Full-Height Video Stage -->
+            <!-- Main Video Stage -->
             <div class="flex-1 w-full rounded-2xl bg-black border border-zinc-800/90 overflow-hidden relative flex flex-col justify-center items-center shadow-2xl">
                 <div id="video-stage" class="video-wrapper w-full h-full flex items-center justify-center"></div>
 
@@ -404,7 +424,7 @@
                     <span>Video Anterior</span>
                 </button>
 
-                <button type="button" onclick="playNextVideo()"
+                <button type="button" onclick="playNextVideo()" title="Pasar al siguiente video"
                         class="hidden sm:flex px-3 py-2.5 rounded-xl bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 text-xs font-medium items-center gap-1.5 transition">
                     <i data-lucide="fast-forward" class="w-3.5 h-3.5"></i>
                     <span>Simular fin de video</span>
@@ -417,319 +437,412 @@
                 </button>
             </div>
 
-            <!-- Slide-Over Queue & Presets Drawer -->
+            <!-- Slide-Over Video Queue Drawer -->
             <div id="queue-drawer" class="hidden absolute inset-3 sm:inset-4 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/80 rounded-2xl z-30 flex flex-col p-4 shadow-2xl">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-800 shrink-0">
                     <div>
-                        <h3 class="text-base font-bold text-white">Gestor de Videos</h3>
-                        <p class="text-xs text-zinc-400">Administra los videos de tu rutina</p>
+                        <h3 class="text-base font-bold text-white">Lista de Reproducción</h3>
+                        <p class="text-xs text-zinc-400">Agrega enlaces de YouTube, Instagram Reels, Facebook Reels o MP4</p>
                     </div>
                     <button type="button" onclick="toggleQueueDrawer()" class="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition">
                         <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
                 </div>
 
-                <div id="drawer-tab-videos" class="flex-1 flex flex-col min-h-0 mt-3">
-                    <form onsubmit="addVideoToActivePreset(event)" class="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800/80 space-y-2 shrink-0">
-                        <div class="flex flex-col sm:flex-row gap-1.5">
-                            <input type="text" id="new-video-title-input" placeholder="Título del video (opcional)..."
-                                   class="sm:w-44 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
-                            <input type="url" id="new-video-url-input" placeholder="Enlace de YouTube, Reel o MP4..." required
-                                   class="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
-                            <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1 transition shrink-0">
-                                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                                <span>Añadir</span>
-                            </button>
-                        </div>
-                    </form>
+                <form onsubmit="addVideoToQueue(event)" class="mt-3 space-y-2 pb-3 border-b border-zinc-800 shrink-0">
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="new-video-title" placeholder="Título del video (opcional)"
+                               class="sm:w-1/3 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
+                        <input type="url" id="new-video-url" placeholder="https://www.youtube.com/watch?v=... o enlace de Reel/MP4" required
+                               class="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition shrink-0">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Agregar</span>
+                        </button>
+                    </div>
+                    <p id="video-error-msg" class="text-[11px] text-rose-400 hidden"></p>
+                </form>
 
-                    <div id="video-queue-list" class="flex-1 overflow-y-auto space-y-1.5 mt-2.5 pr-1"></div>
-                </div>
+                <div id="queue-items-container" class="flex-1 overflow-y-auto mt-3 space-y-2 pr-1"></div>
             </div>
+
         </main>
     </div>
 
     <script>
         // =====================================================================
-        // STORAGE KEYS & DEFAULTS
+        // SAFE ICON REFRESH & HTML ESCAPING
         // =====================================================================
-        const STORAGE_KEYS = {
-            TASKS: 'mi_rutina_tasks_v2',
-            SPOTIFY_LISTS: 'mi_rutina_spotify_lists_v1',
-            SPOTIFY_ACTIVE: 'mi_rutina_spotify_active_v1',
-            SURVEYS: 'mi_rutina_surveys_v1',
-            VIDEO_PRESETS: 'mi_rutina_video_presets_v1',
-            ACTIVE_PRESET: 'mi_rutina_active_preset_v1',
-            DAY_ASSIGNMENTS: 'mi_rutina_day_assignments_v1',
-            AUTO_ADVANCE: 'mi_rutina_auto_advance_v1',
-            ALARM_ENABLED: 'mi_rutina_alarm_enabled_v1',
-            LINKED_TASK_BY_DATE: 'mi_rutina_linked_task_by_date_v1',
-            TRIGGERED_ALARMS: 'mi_rutina_triggered_alarms_v1'
-        };
-
-        const DEFAULT_SPOTIFY_LISTS = [
-            {
-                id: 'sp_default_1',
-                name: 'Enfoque y Rutina',
-                url: 'https://open.spotify.com/playlist/37i9dQZF1DX8NTLI2TtZa6',
-                embedUrl: 'https://open.spotify.com/embed/playlist/37i9dQZF1DX8NTLI2TtZa6?utm_source=generator&theme=0'
-            },
-            {
-                id: 'sp_default_2',
-                name: 'Energía Matutina',
-                url: 'https://open.spotify.com/playlist/37i9dQZF1DXdPec7aLTmlC',
-                embedUrl: 'https://open.spotify.com/embed/playlist/37i9dQZF1DXdPec7aLTmlC?utm_source=generator&theme=0'
-            }
-        ];
-
-        const DEFAULT_VIDEO_PRESETS = {
-            general: {
-                id: 'general',
-                name: 'Rutina General',
-                videos: [
-                    { id: 'v1', title: 'Calentamiento y Enfoque', url: 'https://www.youtube.com/watch?v=x20aA5oP3_k', platform: 'YouTube' },
-                    { id: 'v2', title: 'Sesión Principal', url: 'https://www.youtube.com/watch?v=rD2B43y2z8Y', platform: 'YouTube' },
-                    { id: 'v3', title: 'Ritmo Constante', url: 'https://www.youtube.com/watch?v=1f8yoFFdkcY', platform: 'YouTube' },
-                    { id: 'v4', title: 'Cierre y Estiramiento', url: 'https://www.youtube.com/watch?v=1e-e_xK-fI8', platform: 'YouTube' }
-                ]
-            }
-        };
-
-        const DAY_NAMES_FULL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        const DAY_NAMES_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-
-        function getTodayStr() {
-            const now = new Date();
-            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        }
-
-        function parseDateStr(dateStr) {
-            const [y, m, d] = dateStr.split('-').map(Number);
-            return new Date(y, m - 1, d);
-        }
-
-        function formatDateStr(dateObj) {
-            return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
-        }
-
-        function safeJsonParse(raw, fallback) {
-            try {
-                const parsed = JSON.parse(raw);
-                return parsed ?? fallback;
-            } catch (_e) {
-                return fallback;
-            }
-        }
-
-        function refreshIcons() {
+        function safeRefreshIcons() {
             try {
                 if (window.lucide && typeof window.lucide.createIcons === 'function') {
                     window.lucide.createIcons();
                 }
-            } catch (_e) {
-                // Prevent icon rendering errors from interrupting UI updates
+            } catch (err) {
+                console.warn('Lucide icon refresh skipped:', err);
             }
         }
 
-        let appState = {
-            selectedDate: getTodayStr(),
-            tasksByDate: safeJsonParse(localStorage.getItem(STORAGE_KEYS.TASKS), {}),
-            spotifyLists: safeJsonParse(localStorage.getItem(STORAGE_KEYS.SPOTIFY_LISTS), DEFAULT_SPOTIFY_LISTS),
-            activeSpotifyId: localStorage.getItem(STORAGE_KEYS.SPOTIFY_ACTIVE) || 'sp_default_1',
-            surveysByDate: safeJsonParse(localStorage.getItem(STORAGE_KEYS.SURVEYS), {}),
-            presets: safeJsonParse(localStorage.getItem(STORAGE_KEYS.VIDEO_PRESETS), DEFAULT_VIDEO_PRESETS),
-            activePresetId: localStorage.getItem(STORAGE_KEYS.ACTIVE_PRESET) || 'general',
-            dayAssignments: safeJsonParse(localStorage.getItem(STORAGE_KEYS.DAY_ASSIGNMENTS), {
-                0: 'general', 1: 'general', 2: 'general', 3: 'general', 4: 'general', 5: 'general', 6: 'general'
-            }),
-            autoAdvance: localStorage.getItem(STORAGE_KEYS.AUTO_ADVANCE) !== 'false',
-            alarmEnabled: localStorage.getItem(STORAGE_KEYS.ALARM_ENABLED) !== 'false',
-            linkedTaskByDate: safeJsonParse(localStorage.getItem(STORAGE_KEYS.LINKED_TASK_BY_DATE), {}),
-            triggeredAlarms: safeJsonParse(localStorage.getItem(STORAGE_KEYS.TRIGGERED_ALARMS), {}),
-            currentVideoIndex: 0,
-            presetFormMode: 'create',
-            selectedSurveyStatus: null,
-            ytPlayer: null,
-            ytApiReady: false,
-            socialTimer: null,
-            socialRemaining: 30
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // =====================================================================
+        // STORAGE KEYS & DEFAULT DATA
+        // =====================================================================
+        const STORAGE_KEYS = {
+            TASKS: 'rutina_pwa_tasks_v1',
+            SPOTIFY_LISTS: 'rutina_pwa_spotify_lists_v1',
+            SPOTIFY_ACTIVE: 'rutina_pwa_spotify_active_v1',
+            SURVEYS: 'rutina_pwa_surveys_v1',
+            VIDEOS: 'rutina_pwa_videos_v1',
+            VIDEO_INDEX: 'rutina_pwa_video_index_v1',
+            AUTO_ADVANCE: 'rutina_pwa_auto_advance_v1',
+            ALARM_SOUND: 'rutina_pwa_alarm_sound_v1'
         };
 
-        function saveToStorage(key, value) {
+        const DEFAULT_SPOTIFY_LISTS = [
+            {
+                id: 'sp_default_3',
+                name: 'Workout',
+                url: 'https://open.spotify.com/artist/1585BKSPNL4Ydw2P2LUjO4?si=3MGwqg9MRUaDP2HQn8GXkQ&utm_source=copy-link',
+                embedUrl: 'https://open.spotify.com/embed/artist/1585BKSPNL4Ydw2P2LUjO4?utm_source=generator&theme=0'
+            },
+            {
+                id: 'sp_default_4',
+                name: 'Podcast',
+                url: 'https://open.spotify.com/show/3UtuoTVTzBUQqIblcSMv6p?si=xukV-1O6SAiD3lW2X2DXWQ&utm_source=copy-link',
+                embedUrl: 'https://open.spotify.com/embed/show/3UtuoTVTzBUQqIblcSMv6p?utm_source=generator&theme=0'
+            }
+        ];
+
+        const DEFAULT_VIDEOS = [
+            {
+                id: 'vid_1',
+                title: 'Rutina de Activación y Movilidad (10 Min)',
+                url: 'https://www.youtube.com/watch?v=inpok4MKVLM',
+                platform: 'youtube',
+                youtubeId: 'inpok4MKVLM'
+            },
+            {
+                id: 'vid_2',
+                title: 'Enfoque Profundo - Música Ambiental',
+                url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
+                platform: 'youtube',
+                youtubeId: 'jfKfPfyJRdk'
+            },
+            {
+                id: 'vid_3',
+                title: 'Estiramiento y Relajación Guiada',
+                url: 'https://www.youtube.com/watch?v=sTANio_2E0Q',
+                platform: 'youtube',
+                youtubeId: 'sTANio_2E0Q'
+            },
+            {
+                id: 'vid_4',
+                title: 'Respiración Consciente para Resetear',
+                url: 'https://www.youtube.com/watch?v=tybOi4hjZFQ',
+                platform: 'youtube',
+                youtubeId: 'tybOi4hjZFQ'
+            }
+        ];
+
+        // =====================================================================
+        // APPLICATION STATE
+        // =====================================================================
+        let selectedDateStr = formatDateToISO(new Date());
+        let tasksByDate = loadJSON(STORAGE_KEYS.TASKS, {});
+        let spotifyLists = loadJSON(STORAGE_KEYS.SPOTIFY_LISTS, DEFAULT_SPOTIFY_LISTS);
+        if (!Array.isArray(spotifyLists)) {
+            spotifyLists = [...DEFAULT_SPOTIFY_LISTS];
+        }
+        let activeSpotifyId = localStorage.getItem(STORAGE_KEYS.SPOTIFY_ACTIVE) || (spotifyLists[0] && spotifyLists[0].id) || '';
+        let surveysByDate = loadJSON(STORAGE_KEYS.SURVEYS, {});
+        let selectedSurveyStatus = null;
+        let videoQueue = loadJSON(STORAGE_KEYS.VIDEOS, DEFAULT_VIDEOS);
+        if (!Array.isArray(videoQueue) || videoQueue.length === 0) {
+            videoQueue = [...DEFAULT_VIDEOS];
+        }
+        let currentVideoIndex = parseInt(localStorage.getItem(STORAGE_KEYS.VIDEO_INDEX) || '0', 10);
+        if (Number.isNaN(currentVideoIndex) || currentVideoIndex < 0 || currentVideoIndex >= videoQueue.length) {
+            currentVideoIndex = 0;
+        }
+        let autoAdvance = localStorage.getItem(STORAGE_KEYS.AUTO_ADVANCE) !== 'false';
+        let alarmSoundEnabled = localStorage.getItem(STORAGE_KEYS.ALARM_SOUND) !== 'false';
+
+        let ytPlayer = null;
+        let ytApiReady = false;
+        let socialTimerInterval = null;
+        let socialSecondsRemaining = 30;
+        let triggeredAlarmKeys = new Set();
+        let triggeredAutoVideoKeys = new Set();
+        let alarmAudioCtx = null;
+
+        function loadJSON(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                return raw ? JSON.parse(raw) : fallback;
+            } catch (e) {
+                return fallback;
+            }
+        }
+
+        function saveJSON(key, value) {
             try {
                 localStorage.setItem(key, JSON.stringify(value));
-            } catch (_e) {
-                // Ignore quota errors in restricted storage modes
+            } catch (e) {
+                console.warn('Error saving to localStorage:', e);
             }
         }
 
         // =====================================================================
-        // CLOCK & DATE NAVIGATION
+        // DATE & CLOCK HELPERS
         // =====================================================================
-        function updateClock() {
+        function formatDateToISO(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function parseISODate(isoStr) {
+            const parts = String(isoStr || '').split('-').map(Number);
+            if (parts.length === 3 && !parts.some(Number.isNaN)) {
+                return new Date(parts[0], parts[1] - 1, parts[2]);
+            }
+            return new Date();
+        }
+
+        function formatHumanDate(isoStr) {
+            const date = parseISODate(isoStr);
+            return date.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        function updateClockAndAlarms() {
             const now = new Date();
             const clockEl = document.getElementById('live-clock-display');
             if (clockEl) {
-                clockEl.textContent = now.toLocaleTimeString('es-MX', { hour12: false });
+                clockEl.textContent = now.toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            }
+
+            const todayISO = formatDateToISO(now);
+            const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const todaysTasks = tasksByDate[todayISO] || [];
+
+            todaysTasks.forEach(task => {
+                if (!task || task.completed) return;
+
+                const startKey = `${todayISO}_${task.id}_start_${task.startTime || ''}`;
+                if (task.startTime && task.startTime === currentHHMM && !triggeredAlarmKeys.has(startKey)) {
+                    triggeredAlarmKeys.add(startKey);
+                    playAlarmTone('start');
+                    if (task.autoStartVideo) {
+                        const videoKey = `${todayISO}_${task.id}_video_${task.startTime}`;
+                        if (!triggeredAutoVideoKeys.has(videoKey)) {
+                            triggeredAutoVideoKeys.add(videoKey);
+                            loadVideoAtIndex(currentVideoIndex, true);
+                        }
+                    }
+                }
+
+                const endKey = `${todayISO}_${task.id}_end_${task.endTime || ''}`;
+                if (task.endTime && task.endTime === currentHHMM && !triggeredAlarmKeys.has(endKey)) {
+                    triggeredAlarmKeys.add(endKey);
+                    playAlarmTone('end');
+                }
+            });
+        }
+
+        // =====================================================================
+        // ALARM SOUND ENGINE (WEB AUDIO API)
+        // =====================================================================
+        function ensureAudioContext() {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return null;
+            if (!alarmAudioCtx) {
+                alarmAudioCtx = new AudioCtx();
+            }
+            if (alarmAudioCtx.state === 'suspended') {
+                alarmAudioCtx.resume().catch(() => {});
+            }
+            return alarmAudioCtx;
+        }
+
+        function playAlarmTone(type = 'start') {
+            if (!alarmSoundEnabled) return;
+            const ctx = ensureAudioContext();
+            if (!ctx) return;
+
+            try {
+                const now = ctx.currentTime;
+                const notes = type === 'end' ? [659.25, 523.25] : [523.25, 659.25, 783.99];
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.16);
+                    gain.gain.setValueAtTime(0.001, now + idx * 0.16);
+                    gain.gain.exponentialRampToValueAtTime(0.14, now + idx * 0.16 + 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.16 + 0.15);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.16);
+                    osc.stop(now + idx * 0.16 + 0.16);
+                });
+            } catch (e) {
+                console.warn('Alarm tone error:', e);
             }
         }
 
-        function renderDateHeaderAndStrip() {
-            const dt = parseDateStr(appState.selectedDate);
-            const headerLabel = document.getElementById('header-date-label');
-            const picker = document.getElementById('date-picker');
-            if (headerLabel) {
-                headerLabel.textContent = dt.toLocaleDateString('es-MX', {
-                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-                });
+        function toggleAlarmSound() {
+            alarmSoundEnabled = !alarmSoundEnabled;
+            localStorage.setItem(STORAGE_KEYS.ALARM_SOUND, String(alarmSoundEnabled));
+            if (alarmSoundEnabled) {
+                ensureAudioContext();
             }
-            if (picker) picker.value = appState.selectedDate;
+            updateAlarmToggleUI();
+        }
+
+        function triggerTestAlarm() {
+            ensureAudioContext();
+            const wasEnabled = alarmSoundEnabled;
+            alarmSoundEnabled = true;
+            playAlarmTone('start');
+            alarmSoundEnabled = wasEnabled;
+        }
+
+        function updateAlarmToggleUI() {
+            const label = document.getElementById('alarm-sound-label');
+            const btn = document.getElementById('alarm-sound-toggle-btn');
+            if (label) {
+                label.textContent = alarmSoundEnabled ? 'Alarmas ON' : 'Silencio';
+            }
+            if (btn) {
+                btn.className = alarmSoundEnabled
+                    ? 'px-2 py-1 rounded-lg bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 text-[11px] font-medium flex items-center gap-1 transition'
+                    : 'px-2 py-1 rounded-lg bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-[11px] font-medium flex items-center gap-1 transition';
+            }
+        }
+
+        // =====================================================================
+        // CALENDAR, TASK GROUPS & EXPORT / SYNC
+        // =====================================================================
+        function renderCalendarHeaderAndStrip() {
+            const headerLabel = document.getElementById('header-date-label');
+            const datePicker = document.getElementById('date-picker');
+            if (headerLabel) {
+                const human = formatHumanDate(selectedDateStr);
+                headerLabel.textContent = human.charAt(0).toUpperCase() + human.slice(1);
+            }
+            if (datePicker) {
+                datePicker.value = selectedDateStr;
+            }
 
             const strip = document.getElementById('week-strip');
             if (!strip) return;
 
-            const base = parseDateStr(appState.selectedDate);
-            const todayStr = getTodayStr();
-            let html = '';
+            const centerDate = parseISODate(selectedDateStr);
+            const todayISO = formatDateToISO(new Date());
+            const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
+            let html = '';
             for (let offset = -3; offset <= 3; offset++) {
-                const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + offset);
-                const key = formatDateStr(d);
-                const isSelected = key === appState.selectedDate;
-                const isToday = key === todayStr;
-                const hasTasks = (appState.tasksByDate[key] || []).length > 0;
+                const d = new Date(centerDate);
+                d.setDate(centerDate.getDate() + offset);
+                const iso = formatDateToISO(d);
+                const isSelected = iso === selectedDateStr;
+                const isToday = iso === todayISO;
+                const dayTasks = tasksByDate[iso] || [];
+                const hasTasks = dayTasks.length > 0;
 
                 html += `
-                    <button type="button" onclick="selectDateFromPicker('${key}')"
-                            class="flex flex-col items-center py-1.5 px-1 rounded-xl border transition ${
+                    <button type="button" onclick="selectDateFromPicker('${iso}')"
+                            class="flex flex-col items-center py-1.5 px-1 rounded-xl border text-center transition ${
                                 isSelected
-                                    ? 'bg-indigo-600 border-indigo-400 text-white shadow-md'
+                                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/20'
                                     : isToday
-                                        ? 'bg-zinc-950 border-emerald-500/40 text-emerald-300 hover:bg-zinc-800'
-                                        : 'bg-zinc-950/70 border-zinc-800/80 text-zinc-400 hover:bg-zinc-800/70 hover:text-zinc-200'
+                                        ? 'bg-zinc-800/90 border-indigo-500/40 text-zinc-100 hover:bg-zinc-800'
+                                        : 'bg-zinc-950/70 border-zinc-800/80 text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
                             }">
-                        <span class="text-[10px] font-medium">${DAY_NAMES_SHORT[d.getDay()]}</span>
-                        <span class="text-xs font-bold mt-0.5">${d.getDate()}</span>
-                        <span class="w-1.5 h-1.5 rounded-full mt-1 ${hasTasks ? (isSelected ? 'bg-white' : 'bg-indigo-400') : 'bg-transparent'}"></span>
+                        <span class="text-[10px] font-medium opacity-80">${dayNames[d.getDay()]}</span>
+                        <span class="text-xs font-bold leading-tight mt-0.5">${d.getDate()}</span>
+                        <span class="w-1.5 h-1.5 rounded-full mt-1 ${hasTasks ? (isSelected ? 'bg-white' : 'bg-emerald-400') : 'bg-transparent'}"></span>
                     </button>
                 `;
             }
             strip.innerHTML = html;
         }
 
-        function selectDateFromPicker(dateStr) {
-            if (!dateStr) return;
-            appState.selectedDate = dateStr;
-            renderDateHeaderAndStrip();
-            renderDailyTasks();
-            renderLinkedTaskSelector();
-            loadSurveyForSelectedDate();
-            updateSurveySyncSummary();
-        }
-
         function changeDay(delta) {
-            const dt = parseDateStr(appState.selectedDate);
-            dt.setDate(dt.getDate() + delta);
-            selectDateFromPicker(formatDateStr(dt));
+            const d = parseISODate(selectedDateStr);
+            d.setDate(d.getDate() + delta);
+            selectedDateStr = formatDateToISO(d);
+            onSelectedDateChanged();
         }
 
         function goToToday() {
-            selectDateFromPicker(getTodayStr());
+            selectedDateStr = formatDateToISO(new Date());
+            onSelectedDateChanged();
         }
 
-        // =====================================================================
-        // ALARMS (WEB AUDIO TONE + SCHEDULE MONITOR)
-        // =====================================================================
-        function playAlarmTone() {
-            if (!appState.alarmEnabled) return;
-            try {
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                if (!AudioCtx) return;
-                const ctx = new AudioCtx();
-                const notes = [523.25, 659.25, 783.99];
-                notes.forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0.08, ctx.currentTime + i * 0.16);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.16 + 0.35);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(ctx.currentTime + i * 0.16);
-                    osc.stop(ctx.currentTime + i * 0.16 + 0.36);
-                });
-            } catch (_e) {
-                // Audio playback blocked prior to interaction
+        function selectDateFromPicker(isoValue) {
+            if (!isoValue) return;
+            selectedDateStr = isoValue;
+            onSelectedDateChanged();
+        }
+
+        function onSelectedDateChanged() {
+            renderCalendarHeaderAndStrip();
+            renderDailyTasks();
+            loadSurveyForSelectedDate();
+        }
+
+        function computeTargetDatesForGroup(baseDateStr, groupMode) {
+            const base = parseISODate(baseDateStr);
+            if (!groupMode || groupMode === 'single') {
+                return [formatDateToISO(base)];
             }
-        }
 
-        function toggleAlarmSound() {
-            appState.alarmEnabled = !appState.alarmEnabled;
-            localStorage.setItem(STORAGE_KEYS.ALARM_ENABLED, String(appState.alarmEnabled));
-            updateAlarmToggleUI();
-        }
+            const result = [];
+            for (let i = 0; i < 28; i++) {
+                const candidate = new Date(base);
+                candidate.setDate(base.getDate() + i);
+                const dow = candidate.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 
-        function updateAlarmToggleUI() {
-            const btn = document.getElementById('alarm-sound-toggle-btn');
-            const label = document.getElementById('alarm-sound-label');
-            if (!btn || !label) return;
-            if (appState.alarmEnabled) {
-                btn.className = 'px-2 py-1 rounded-lg bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 text-[11px] font-medium flex items-center gap-1 transition';
-                label.textContent = 'Alarmas ON';
-            } else {
-                btn.className = 'px-2 py-1 rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 text-[11px] font-medium flex items-center gap-1 transition';
-                label.textContent = 'Alarmas OFF';
-            }
-        }
-
-        function triggerTestAlarm() {
-            const prev = appState.alarmEnabled;
-            appState.alarmEnabled = true;
-            playAlarmTone();
-            appState.alarmEnabled = prev;
-        }
-
-        function monitorTasksAndLinkedVideo() {
-            const today = getTodayStr();
-            const tasks = appState.tasksByDate[today] || [];
-            const now = new Date();
-            const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            const linkedId = appState.linkedTaskByDate[today];
-
-            tasks.forEach(task => {
-                const startKey = `${today}_${task.id}_start_${task.startTime}`;
-                if (task.startTime === hhmm && !appState.triggeredAlarms[startKey]) {
-                    appState.triggeredAlarms[startKey] = true;
-                    saveToStorage(STORAGE_KEYS.TRIGGERED_ALARMS, appState.triggeredAlarms);
-                    playAlarmTone();
-                    if (linkedId === task.id && !task.completed) {
-                        triggerLinkedTaskVideoNow();
-                    }
+                let matches = false;
+                if (groupMode === 'weekdays') {
+                    matches = dow >= 1 && dow <= 5;
+                } else if (groupMode === 'mwf') {
+                    matches = dow === 1 || dow === 3 || dow === 5;
+                } else if (groupMode === 'tth') {
+                    matches = dow === 2 || dow === 4;
+                } else if (groupMode === 'all_week') {
+                    matches = true;
                 }
-            });
-        }
 
-        // =====================================================================
-        // TASKS WITH DAY GROUPS & AUTO-VIDEO BINDING
-        // =====================================================================
-        function getDatesForGroup(baseDateStr, groupKey, horizonDays = 28) {
-            if (groupKey === 'single') return [baseDateStr];
-            const base = parseDateStr(baseDateStr);
-            const matched = [];
-
-            for (let i = 0; i < horizonDays; i++) {
-                const dt = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
-                const dow = dt.getDay();
-                let include = false;
-                if (groupKey === 'weekdays') include = dow >= 1 && dow <= 5;
-                else if (groupKey === 'mwf') include = dow === 1 || dow === 3 || dow === 5;
-                else if (groupKey === 'tt') include = dow === 2 || dow === 4;
-                else if (groupKey === 'all_week') include = true;
-
-                if (include) matched.push(formatDateStr(dt));
+                if (matches) {
+                    result.push(formatDateToISO(candidate));
+                }
             }
-            return matched.length ? matched : [baseDateStr];
+
+            if (result.length === 0) {
+                result.push(formatDateToISO(base));
+            }
+            return result;
         }
 
         function addDailyTask(event) {
@@ -738,172 +851,327 @@
             const endInput = document.getElementById('task-end-input');
             const textInput = document.getElementById('task-text-input');
             const groupSelect = document.getElementById('task-group-select');
-            const autoVideoCb = document.getElementById('task-auto-video-checkbox');
+            const autoVideoInput = document.getElementById('task-autovideo-input');
 
-            const startTime = startInput ? startInput.value : '08:00';
-            const endTime = endInput ? endInput.value : '08:30';
-            const title = textInput ? textInput.value.trim() : '';
-            const groupKey = groupSelect ? groupSelect.value : 'single';
-            const bindAutoVideo = autoVideoCb ? autoVideoCb.checked : false;
-
+            const title = (textInput ? textInput.value : '').trim();
             if (!title) return;
 
-            const targetDates = getDatesForGroup(appState.selectedDate, groupKey, 28);
-            const seriesId = groupKey !== 'single' ? 'grp_' + Date.now() : null;
+            const startTime = (startInput && startInput.value) || '07:30';
+            const endTime = (endInput && endInput.value) || '08:00';
+            const groupMode = (groupSelect && groupSelect.value) || 'single';
+            const autoStartVideo = Boolean(autoVideoInput && autoVideoInput.checked);
 
-            targetDates.forEach((dateKey, idx) => {
-                if (!Array.isArray(appState.tasksByDate[dateKey])) {
-                    appState.tasksByDate[dateKey] = [];
+            const targetDates = computeTargetDatesForGroup(selectedDateStr, groupMode);
+            const batchId = 'batch_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+
+            targetDates.forEach((isoDate, idx) => {
+                if (!Array.isArray(tasksByDate[isoDate])) {
+                    tasksByDate[isoDate] = [];
                 }
-                const newTask = {
+                tasksByDate[isoDate].push({
                     id: 'task_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
-                    seriesId,
+                    batchId: groupMode !== 'single' ? batchId : null,
+                    title,
                     startTime,
                     endTime,
-                    title,
-                    completed: false
-                };
-                appState.tasksByDate[dateKey].push(newTask);
-                appState.tasksByDate[dateKey].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
-
-                if (bindAutoVideo) {
-                    appState.linkedTaskByDate[dateKey] = newTask.id;
-                }
+                    completed: false,
+                    autoStartVideo
+                });
+                tasksByDate[isoDate].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
             });
 
-            if (bindAutoVideo) {
-                saveToStorage(STORAGE_KEYS.LINKED_TASK_BY_DATE, appState.linkedTaskByDate);
-            }
-
-            saveToStorage(STORAGE_KEYS.TASKS, appState.tasksByDate);
+            saveJSON(STORAGE_KEYS.TASKS, tasksByDate);
             if (textInput) textInput.value = '';
-            if (autoVideoCb) autoVideoCb.checked = false;
+            if (autoVideoInput) autoVideoInput.checked = false;
 
-            renderDateHeaderAndStrip();
-            renderDailyTasks();
-            renderLinkedTaskSelector();
-            updateSurveySyncSummary();
-
-            const listEl = document.getElementById('daily-tasks-list');
-            if (listEl) {
-                listEl.scrollTop = listEl.scrollHeight;
-            }
+            renderCalendarHeaderAndStrip();
+            renderDailyTasks(true);
+            updateSurveySummaryFromTasks();
         }
 
-        function toggleTaskDone(taskId) {
-            const list = appState.tasksByDate[appState.selectedDate] || [];
+        function toggleTaskCompletion(taskId) {
+            const list = tasksByDate[selectedDateStr] || [];
             const task = list.find(t => t.id === taskId);
             if (!task) return;
             task.completed = !task.completed;
-            saveToStorage(STORAGE_KEYS.TASKS, appState.tasksByDate);
+            saveJSON(STORAGE_KEYS.TASKS, tasksByDate);
             renderDailyTasks();
-            updateSurveySyncSummary();
+            updateSurveySummaryFromTasks();
         }
 
         function deleteDailyTask(taskId) {
-            const list = appState.tasksByDate[appState.selectedDate] || [];
-            appState.tasksByDate[appState.selectedDate] = list.filter(t => t.id !== taskId);
-            if (appState.linkedTaskByDate[appState.selectedDate] === taskId) {
-                delete appState.linkedTaskByDate[appState.selectedDate];
-                saveToStorage(STORAGE_KEYS.LINKED_TASK_BY_DATE, appState.linkedTaskByDate);
+            const list = tasksByDate[selectedDateStr] || [];
+            tasksByDate[selectedDateStr] = list.filter(t => t.id !== taskId);
+            if (tasksByDate[selectedDateStr].length === 0) {
+                delete tasksByDate[selectedDateStr];
             }
-            saveToStorage(STORAGE_KEYS.TASKS, appState.tasksByDate);
-            renderDateHeaderAndStrip();
+            saveJSON(STORAGE_KEYS.TASKS, tasksByDate);
+            renderCalendarHeaderAndStrip();
             renderDailyTasks();
-            renderLinkedTaskSelector();
-            updateSurveySyncSummary();
+            updateSurveySummaryFromTasks();
         }
 
-        function escapeHtml(str) {
-            return String(str || '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        }
-
-        function renderDailyTasks() {
+        function renderDailyTasks(scrollToBottom = false) {
             const container = document.getElementById('daily-tasks-list');
             if (!container) return;
 
-            const rawTasks = appState.tasksByDate[appState.selectedDate];
-            const tasks = Array.isArray(rawTasks) ? rawTasks : [];
-            const linkedTaskId = appState.linkedTaskByDate[appState.selectedDate] || '';
+            const list = tasksByDate[selectedDateStr] || [];
+            let itemsHtml = '';
 
-            if (tasks.length === 0) {
-                container.innerHTML = `
-                    <li class="flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl border border-dashed border-zinc-800/90 bg-zinc-950/50 text-xs text-zinc-500">
-                        <span class="font-mono text-[11px]">1.</span>
-                        <span class="flex-1 truncate">Sin tareas agregadas para este día</span>
-                        <span class="text-[10px] font-mono text-zinc-600">--:-- - --:--</span>
+            if (list.length === 0) {
+                itemsHtml = `
+                    <li class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-zinc-950/60 border border-dashed border-zinc-800/90 text-xs text-zinc-500">
+                        <span>1. Sin tareas programadas en este día</span>
+                        <span class="text-[10px] text-zinc-600">Agrega una arriba</span>
                     </li>
-                    <li class="flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl border border-dashed border-zinc-800/70 bg-zinc-950/30 text-xs text-zinc-600">
-                        <span class="font-mono text-[11px]">2.</span>
-                        <span class="flex-1 truncate">Usa el formulario superior para agregar una tarea</span>
-                        <span class="text-[10px] font-mono">--:-- - --:--</span>
+                    <li class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-zinc-950/40 border border-dashed border-zinc-800/60 text-xs text-zinc-600">
+                        <span>2. Usa grupos de días para repetir</span>
+                        <span class="text-[10px]">Lun-Vie · L/M/V · M/J</span>
                     </li>
                 `;
-                return;
-            }
+            } else {
+                itemsHtml = list.map((task, index) => {
+                    const checkedAttr = task.completed ? 'checked' : '';
+                    const textStyle = task.completed ? 'line-through text-zinc-500' : 'text-zinc-100';
+                    const timeLabel = `${escapeHtml(task.startTime || '--:--')} - ${escapeHtml(task.endTime || '--:--')}`;
+                    const autoBadge = task.autoStartVideo
+                        ? `<span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[10px] font-medium shrink-0">Auto-Video</span>`
+                        : '';
 
-            container.innerHTML = tasks.map((task, index) => {
-                const isLinked = task.id === linkedTaskId;
-                return `
-                    <li class="flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl border transition ${
-                        task.completed
-                            ? 'bg-zinc-950/50 border-zinc-800/60 opacity-65'
-                            : isLinked
-                                ? 'bg-amber-950/25 border-amber-500/40'
-                                : 'bg-zinc-950/95 border-zinc-800 hover:border-zinc-700'
-                    }">
-                        <label class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer">
-                            <span class="text-[11px] font-mono text-zinc-500 shrink-0">${index + 1}.</span>
-                            <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTaskDone('${task.id}')"
-                                   class="w-4 h-4 rounded accent-indigo-500 cursor-pointer shrink-0">
-                            <span class="text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded bg-zinc-900 text-indigo-300 border border-zinc-800 shrink-0">
-                                ${escapeHtml(task.startTime)} - ${escapeHtml(task.endTime)}
-                            </span>
-                            <span class="text-xs font-medium truncate ${task.completed ? 'line-through text-zinc-500' : 'text-zinc-100'}">
-                                ${escapeHtml(task.title)}
-                            </span>
-                            ${isLinked ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">Auto-Video</span>' : ''}
-                        </label>
-                        <div class="flex items-center gap-1 shrink-0">
-                            <button type="button" onclick="setLinkedTaskForSelectedDate('${task.id}')" title="Ligar inicio de video a esta tarea"
-                                    class="p-1.5 rounded-lg transition ${isLinked ? 'text-amber-300 bg-amber-500/15' : 'text-zinc-400 hover:text-amber-300 hover:bg-zinc-800'}">
-                                <i data-lucide="zap" class="w-3.5 h-3.5"></i>
-                            </button>
+                    return `
+                        <li class="flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-zinc-950/90 border border-zinc-800/80 hover:border-zinc-700 transition">
+                            <label class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer select-none">
+                                <span class="text-[11px] font-mono text-zinc-500 w-4 shrink-0">${index + 1}.</span>
+                                <input type="checkbox" ${checkedAttr} onchange="toggleTaskCompletion('${task.id}')"
+                                       class="rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-0 shrink-0">
+                                <span class="px-1.5 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-indigo-300 shrink-0">
+                                    ${timeLabel}
+                                </span>
+                                <span class="text-xs font-medium truncate ${textStyle}">${escapeHtml(task.title)}</span>
+                                ${autoBadge}
+                            </label>
                             <button type="button" onclick="deleteDailyTask('${task.id}')" title="Eliminar tarea"
-                                    class="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-zinc-800 transition">
+                                    class="p-1 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-950/40 transition shrink-0">
                                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                             </button>
-                        </div>
-                    </li>
-                `;
-            }).join('');
+                        </li>
+                    `;
+                }).join('');
+            }
 
-            refreshIcons();
+            container.innerHTML = `<ul class="space-y-1.5">${itemsHtml}</ul>`;
+            safeRefreshIcons();
+
+            if (scrollToBottom) {
+                container.scrollTop = container.scrollHeight;
+            }
         }
 
         // =====================================================================
-        // SPOTIFY PLAYLISTS (ADD, SWITCH & DELETE AT ANY TIME)
+        // EXPORT & SYNC TASKS ACROSS DEVICES
+        // =====================================================================
+        function toggleSyncPanel() {
+            const panel = document.getElementById('sync-tasks-panel');
+            if (!panel) return;
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                refreshSyncCodeField();
+            }
+            safeRefreshIcons();
+        }
+
+        function buildSyncPayload() {
+            return JSON.stringify({
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                tasksByDate,
+                surveysByDate
+            });
+        }
+
+        function encodeSyncCode(jsonStr) {
+            const utf8Bytes = new TextEncoder().encode(jsonStr);
+            let binary = '';
+            for (let i = 0; i < utf8Bytes.length; i++) {
+                binary += String.fromCharCode(utf8Bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        function decodeSyncCode(codeStr) {
+            const binary = atob(codeStr.trim());
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            const jsonStr = new TextDecoder().decode(bytes);
+            return JSON.parse(jsonStr);
+        }
+
+        function refreshSyncCodeField() {
+            const field = document.getElementById('sync-code-field');
+            if (!field) return;
+            try {
+                field.value = encodeSyncCode(buildSyncPayload());
+            } catch (e) {
+                field.value = '';
+            }
+        }
+
+        function setSyncStatus(msg, isError = false) {
+            const statusEl = document.getElementById('sync-status-message');
+            if (!statusEl) return;
+            statusEl.textContent = msg;
+            statusEl.className = `text-[11px] ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
+            statusEl.classList.remove('hidden');
+        }
+
+        function exportTasksJson() {
+            try {
+                const payload = buildSyncPayload();
+                const blob = new Blob([payload], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `rutina-tareas-${formatDateToISO(new Date())}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                refreshSyncCodeField();
+                setSyncStatus('Archivo JSON descargado. Ábrelo o impórtalo en tu otro dispositivo.');
+            } catch (e) {
+                setSyncStatus('No se pudo exportar el archivo JSON.', true);
+            }
+        }
+
+        function mergeImportedData(parsed) {
+            if (!parsed || typeof parsed !== 'object') {
+                throw new Error('Formato inválido');
+            }
+            const incomingTasks = parsed.tasksByDate && typeof parsed.tasksByDate === 'object'
+                ? parsed.tasksByDate
+                : (typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null);
+
+            if (!incomingTasks) {
+                throw new Error('Sin tareas válidas');
+            }
+
+            Object.keys(incomingTasks).forEach(dateKey => {
+                const incomingList = Array.isArray(incomingTasks[dateKey]) ? incomingTasks[dateKey] : [];
+                const existingList = Array.isArray(tasksByDate[dateKey]) ? tasksByDate[dateKey] : [];
+                const existingIds = new Set(existingList.map(t => t.id));
+
+                incomingList.forEach(item => {
+                    if (!item || !item.title) return;
+                    const id = item.id || ('task_imp_' + Math.random().toString(36).slice(2, 8));
+                    if (!existingIds.has(id)) {
+                        existingList.push({
+                            id,
+                            batchId: item.batchId || null,
+                            title: String(item.title),
+                            startTime: item.startTime || '08:00',
+                            endTime: item.endTime || '08:30',
+                            completed: Boolean(item.completed),
+                            autoStartVideo: Boolean(item.autoStartVideo)
+                        });
+                        existingIds.add(id);
+                    }
+                });
+
+                existingList.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+                if (existingList.length > 0) {
+                    tasksByDate[dateKey] = existingList;
+                }
+            });
+
+            if (parsed.surveysByDate && typeof parsed.surveysByDate === 'object') {
+                surveysByDate = { ...surveysByDate, ...parsed.surveysByDate };
+                saveJSON(STORAGE_KEYS.SURVEYS, surveysByDate);
+            }
+
+            saveJSON(STORAGE_KEYS.TASKS, tasksByDate);
+            renderCalendarHeaderAndStrip();
+            renderDailyTasks();
+            updateSurveySummaryFromTasks();
+            loadSurveyForSelectedDate();
+            refreshSyncCodeField();
+        }
+
+        function importTasksFromFile(event) {
+            const file = event.target && event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const parsed = JSON.parse(String(e.target.result || ''));
+                    mergeImportedData(parsed);
+                    setSyncStatus('Tareas importadas y sincronizadas correctamente.');
+                } catch (err) {
+                    setSyncStatus('El archivo seleccionado no es un JSON válido de tareas.', true);
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function copySyncCode() {
+            const field = document.getElementById('sync-code-field');
+            if (!field) return;
+            refreshSyncCodeField();
+            field.select();
+            try {
+                document.execCommand('copy');
+                setSyncStatus('Código copiado. Pégalo en tu otro dispositivo y pulsa "Aplicar".');
+            } catch (e) {
+                setSyncStatus('Selecciona el texto y cópialo manualmente.', false);
+            }
+        }
+
+        function applySyncCode() {
+            const field = document.getElementById('sync-code-field');
+            const raw = field ? field.value.trim() : '';
+            if (!raw) {
+                setSyncStatus('Pega primero un código de sincronización o JSON.', true);
+                return;
+            }
+            try {
+                let parsed = null;
+                if (raw.startsWith('{')) {
+                    parsed = JSON.parse(raw);
+                } else {
+                    parsed = decodeSyncCode(raw);
+                }
+                mergeImportedData(parsed);
+                setSyncStatus('Código aplicado: tus tareas quedaron sincronizadas.');
+            } catch (err) {
+                setSyncStatus('Código de sincronización no válido.', true);
+            }
+        }
+
+        // =====================================================================
+        // SPOTIFY PLAYLISTS (ADD, SWITCH & DELETE)
         // =====================================================================
         function toSpotifyEmbedUrl(rawUrl) {
-            const trimmed = (rawUrl || '').trim();
+            const trimmed = String(rawUrl || '').trim();
             if (!trimmed) return null;
-            if (/^https:\/\/open\.spotify\.com\/embed\//i.test(trimmed)) return trimmed;
-            const match = trimmed.match(/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(playlist|album|track|episode|show)\/([a-zA-Z0-9_-]+)/i);
-            return match ? `https://open.spotify.com/embed/${match[1].toLowerCase()}/${match[2]}?utm_source=generator&theme=0` : null;
+            if (/^https:\/\/open\.spotify\.com\/embed\//i.test(trimmed)) {
+                return trimmed;
+            }
+            const match = trimmed.match(/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(playlist|album|track|episode|show|artist)\/([a-zA-Z0-9_-]+)/i);
+            if (!match) return null;
+            return `https://open.spotify.com/embed/${match[1].toLowerCase()}/${match[2]}?utm_source=generator&theme=0`;
         }
 
         function toggleSpotifyInput() {
             const form = document.getElementById('spotify-url-form');
             const errEl = document.getElementById('spotify-url-error');
+            if (!form) return;
+            form.classList.toggle('hidden');
             if (errEl) errEl.classList.add('hidden');
-            if (form) form.classList.toggle('hidden');
             const urlInput = document.getElementById('spotify-url-input');
-            if (form && !form.classList.contains('hidden') && urlInput) {
-                setTimeout(() => urlInput.focus(), 10);
+            if (!form.classList.contains('hidden') && urlInput) {
+                urlInput.focus();
             }
         }
 
@@ -911,344 +1179,377 @@
             const nameInput = document.getElementById('spotify-name-input');
             const urlInput = document.getElementById('spotify-url-input');
             const errEl = document.getElementById('spotify-url-error');
+            const form = document.getElementById('spotify-url-form');
+
             const rawUrl = urlInput ? urlInput.value.trim() : '';
             const embedUrl = toSpotifyEmbedUrl(rawUrl);
 
             if (!embedUrl) {
                 if (errEl) errEl.classList.remove('hidden');
-                if (urlInput) urlInput.focus();
                 return;
             }
 
             if (errEl) errEl.classList.add('hidden');
-
             const customName = nameInput ? nameInput.value.trim() : '';
-            const newId = 'sp_' + Date.now();
-            const currentLists = Array.isArray(appState.spotifyLists) ? appState.spotifyLists : [];
-
-            currentLists.push({
-                id: newId,
-                name: customName || `Playlist ${currentLists.length + 1}`,
+            const finalName = customName || `Playlist ${spotifyLists.length + 1}`;
+            const newItem = {
+                id: 'sp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                name: finalName,
                 url: rawUrl,
                 embedUrl
-            });
+            };
 
-            appState.spotifyLists = currentLists;
-            appState.activeSpotifyId = newId;
-
-            saveToStorage(STORAGE_KEYS.SPOTIFY_LISTS, appState.spotifyLists);
-            try {
-                localStorage.setItem(STORAGE_KEYS.SPOTIFY_ACTIVE, appState.activeSpotifyId);
-            } catch (_e) {}
+            spotifyLists.push(newItem);
+            activeSpotifyId = newItem.id;
+            saveJSON(STORAGE_KEYS.SPOTIFY_LISTS, spotifyLists);
+            localStorage.setItem(STORAGE_KEYS.SPOTIFY_ACTIVE, activeSpotifyId);
 
             if (nameInput) nameInput.value = '';
             if (urlInput) urlInput.value = '';
-            const form = document.getElementById('spotify-url-form');
             if (form) form.classList.add('hidden');
 
-            renderSpotifyPlaylistsUI();
+            renderSpotifySection();
         }
 
         function selectSpotifyPlaylist(id) {
-            appState.activeSpotifyId = id;
-            try {
-                localStorage.setItem(STORAGE_KEYS.SPOTIFY_ACTIVE, id);
-            } catch (_e) {}
-            renderSpotifyPlaylistsUI();
+            const found = spotifyLists.find(item => item.id === id);
+            if (!found) return;
+            activeSpotifyId = found.id;
+            localStorage.setItem(STORAGE_KEYS.SPOTIFY_ACTIVE, activeSpotifyId);
+            renderSpotifySection();
         }
 
-        function deleteSpotifyPlaylist(id) {
-            appState.spotifyLists = (appState.spotifyLists || []).filter(item => item.id !== id);
-            if (appState.activeSpotifyId === id) {
-                appState.activeSpotifyId = appState.spotifyLists.length > 0 ? appState.spotifyLists[0].id : '';
+        function deleteSpotifyPlaylist(id, event) {
+            if (event) event.stopPropagation();
+            spotifyLists = spotifyLists.filter(item => item.id !== id);
+            saveJSON(STORAGE_KEYS.SPOTIFY_LISTS, spotifyLists);
+
+            if (activeSpotifyId === id) {
+                activeSpotifyId = spotifyLists.length > 0 ? spotifyLists[0].id : '';
+                localStorage.setItem(STORAGE_KEYS.SPOTIFY_ACTIVE, activeSpotifyId);
             }
-            saveToStorage(STORAGE_KEYS.SPOTIFY_LISTS, appState.spotifyLists);
-            try {
-                localStorage.setItem(STORAGE_KEYS.SPOTIFY_ACTIVE, appState.activeSpotifyId);
-            } catch (_e) {}
-            renderSpotifyPlaylistsUI();
+            renderSpotifySection();
         }
 
-        function renderSpotifyPlaylistsUI() {
+        function renderSpotifySection() {
             const bar = document.getElementById('spotify-playlists-bar');
             const iframe = document.getElementById('spotify-embed-iframe');
-            const wrapper = document.getElementById('spotify-embed-wrapper');
-            if (!bar) return;
+            const titleEl = document.getElementById('spotify-active-title');
 
-            const lists = Array.isArray(appState.spotifyLists) ? appState.spotifyLists : [];
-            if (!lists.length) {
-                bar.innerHTML = `<span class="text-[11px] text-zinc-500">Sin playlists guardadas. Pulsa "Agregar Playlist" para añadir una.</span>`;
-                if (wrapper) wrapper.classList.add('hidden');
-                return;
+            if (bar) {
+                if (spotifyLists.length === 0) {
+                    bar.innerHTML = `<span class="text-[11px] text-zinc-500 py-1">No hay playlists guardadas. Pulsa "Agregar Playlist".</span>`;
+                } else {
+                    bar.innerHTML = spotifyLists.map(item => {
+                        const isActive = item.id === activeSpotifyId;
+                        return `
+                            <div onclick="selectSpotifyPlaylist('${item.id}')"
+                                 class="group flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs cursor-pointer shrink-0 transition ${
+                                     isActive
+                                         ? 'bg-[#1DB954]/15 border-[#1DB954]/60 text-white font-semibold'
+                                         : 'bg-zinc-950/80 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                                 }">
+                                <span class="truncate max-w-[135px]">${escapeHtml(item.name)}</span>
+                                <button type="button" onclick="deleteSpotifyPlaylist('${item.id}', event)" title="Eliminar playlist"
+                                        class="p-0.5 rounded text-zinc-500 hover:text-rose-400 hover:bg-rose-950/40 transition">
+                                    <i data-lucide="x" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                        `;
+                    }).join('');
+                }
             }
 
-            if (wrapper) wrapper.classList.remove('hidden');
-            const active = lists.find(p => p.id === appState.activeSpotifyId) || lists[0];
-            appState.activeSpotifyId = active.id;
-
-            if (iframe && iframe.getAttribute('src') !== active.embedUrl) {
-                iframe.setAttribute('src', active.embedUrl);
+            const activeItem = spotifyLists.find(item => item.id === activeSpotifyId) || spotifyLists[0] || null;
+            if (titleEl) {
+                titleEl.textContent = activeItem ? activeItem.name : 'Sin playlist seleccionada';
+            }
+            if (iframe) {
+                const targetSrc = activeItem ? activeItem.embedUrl : '';
+                if (iframe.getAttribute('src') !== targetSrc) {
+                    iframe.setAttribute('src', targetSrc);
+                }
             }
 
-            bar.innerHTML = lists.map(item => {
-                const isActive = item.id === active.id;
-                return `
-                    <div class="inline-flex items-center rounded-xl text-xs font-medium border transition ${
-                        isActive
-                            ? 'bg-[#1DB954]/20 border-[#1DB954]/60 text-[#1ed760]'
-                            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                    }">
-                        <button type="button" onclick="selectSpotifyPlaylist('${item.id}')" class="pl-2.5 pr-1.5 py-1 truncate max-w-[140px]">
-                            ${escapeHtml(item.name)}
-                        </button>
-                        <button type="button" onclick="deleteSpotifyPlaylist('${item.id}')" title="Eliminar playlist"
-                                class="pr-2 pl-1 py-1 text-zinc-400 hover:text-rose-400 transition">
-                            <span class="text-xs font-bold leading-none">×</span>
-                        </button>
-                    </div>
-                `;
-            }).join('');
+            safeRefreshIcons();
         }
 
         // =====================================================================
         // DAILY SURVEY & STREAK
         // =====================================================================
-        function updateSurveySyncSummary() {
-            const tasks = appState.tasksByDate[appState.selectedDate] || [];
-            const total = tasks.length;
-            const done = tasks.filter(t => t.completed).length;
-            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-            const el = document.getElementById('survey-sync-summary');
-            if (el) el.textContent = `Tareas completadas: ${done} de ${total} (${pct}%)`;
-        }
+        function updateSurveySummaryFromTasks() {
+            const list = tasksByDate[selectedDateStr] || [];
+            const total = list.length;
+            const completed = list.filter(t => t.completed).length;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-        function computeStreak() {
-            let streak = 0;
-            const cur = parseDateStr(getTodayStr());
-            for (let i = 0; i < 365; i++) {
-                const d = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() - i);
-                const key = formatDateStr(d);
-                const entry = appState.surveysByDate[key];
-                if (entry && entry.status === 'yes') {
-                    streak++;
-                } else if (i === 0) {
-                    continue;
-                } else {
-                    break;
-                }
+            const summaryEl = document.getElementById('survey-sync-summary');
+            if (summaryEl) {
+                summaryEl.textContent = `Tareas completadas: ${completed} de ${total} (${pct}%)`;
             }
-            const badge = document.getElementById('survey-streak-count');
-            if (badge) badge.textContent = String(streak);
         }
 
         function selectSurveyStatus(status) {
-            appState.selectedSurveyStatus = status;
-            document.querySelectorAll('.survey-opt-btn').forEach(btn => {
-                const active = btn.getAttribute('data-status') === status;
-                btn.classList.toggle('border-emerald-500', active && status === 'yes');
-                btn.classList.toggle('bg-emerald-500/15', active && status === 'yes');
-                btn.classList.toggle('border-amber-500', active && status === 'partial');
-                btn.classList.toggle('bg-amber-500/15', active && status === 'partial');
-                btn.classList.toggle('border-rose-500', active && status === 'no');
-                btn.classList.toggle('bg-rose-500/15', active && status === 'no');
+            selectedSurveyStatus = status;
+            const buttons = document.querySelectorAll('.survey-opt-btn');
+            buttons.forEach(btn => {
+                const btnStatus = btn.getAttribute('data-status');
+                btn.classList.remove(
+                    'border-emerald-500', 'bg-emerald-500/15', 'text-emerald-200',
+                    'border-amber-500', 'bg-amber-500/15', 'text-amber-200',
+                    'border-rose-500', 'bg-rose-500/15', 'text-rose-200'
+                );
+                if (btnStatus === status) {
+                    if (status === 'yes') {
+                        btn.classList.add('border-emerald-500', 'bg-emerald-500/15', 'text-emerald-200');
+                    } else if (status === 'partial') {
+                        btn.classList.add('border-amber-500', 'bg-amber-500/15', 'text-amber-200');
+                    } else if (status === 'no') {
+                        btn.classList.add('border-rose-500', 'bg-rose-500/15', 'text-rose-200');
+                    }
+                }
             });
-        }
-
-        function loadSurveyForSelectedDate() {
-            const entry = appState.surveysByDate[appState.selectedDate];
-            const noteInput = document.getElementById('survey-note-input');
-            const savedBadge = document.getElementById('survey-saved-indicator');
-
-            if (entry) {
-                selectSurveyStatus(entry.status || null);
-                if (noteInput) noteInput.value = entry.note || '';
-                if (savedBadge) savedBadge.classList.remove('hidden');
-            } else {
-                appState.selectedSurveyStatus = null;
-                document.querySelectorAll('.survey-opt-btn').forEach(btn => {
-                    btn.classList.remove('border-emerald-500', 'bg-emerald-500/15', 'border-amber-500', 'bg-amber-500/15', 'border-rose-500', 'bg-rose-500/15');
-                });
-                if (noteInput) noteInput.value = '';
-                if (savedBadge) savedBadge.classList.add('hidden');
-            }
-            computeStreak();
         }
 
         function saveDailySurvey(event) {
             event.preventDefault();
             const noteInput = document.getElementById('survey-note-input');
-            appState.surveysByDate[appState.selectedDate] = {
-                status: appState.selectedSurveyStatus || 'partial',
-                note: noteInput ? noteInput.value.trim() : '',
+            const note = noteInput ? noteInput.value.trim() : '';
+
+            surveysByDate[selectedDateStr] = {
+                status: selectedSurveyStatus || 'partial',
+                note,
                 updatedAt: new Date().toISOString()
             };
-            saveToStorage(STORAGE_KEYS.SURVEYS, appState.surveysByDate);
-            const savedBadge = document.getElementById('survey-saved-indicator');
-            if (savedBadge) savedBadge.classList.remove('hidden');
-            computeStreak();
+            saveJSON(STORAGE_KEYS.SURVEYS, surveysByDate);
+
+            const badge = document.getElementById('survey-saved-indicator');
+            if (badge) {
+                badge.classList.remove('hidden');
+                setTimeout(() => badge.classList.add('hidden'), 1800);
+            }
+            updateStreakCounter();
         }
 
-        // =====================================================================
-        // VIDEO PRESETS, PLAYER & TASK-LINKED AUTOMATION
-        // =====================================================================
-        function getActivePreset() {
-            if (!appState.presets[appState.activePresetId]) {
-                const firstKey = Object.keys(appState.presets)[0];
-                if (firstKey) {
-                    appState.activePresetId = firstKey;
+        function loadSurveyForSelectedDate() {
+            updateSurveySummaryFromTasks();
+            const saved = surveysByDate[selectedDateStr];
+            const noteInput = document.getElementById('survey-note-input');
+
+            if (saved) {
+                selectSurveyStatus(saved.status || null);
+                if (noteInput) noteInput.value = saved.note || '';
+            } else {
+                selectSurveyStatus(null);
+                if (noteInput) noteInput.value = '';
+            }
+            updateStreakCounter();
+        }
+
+        function updateStreakCounter() {
+            let streak = 0;
+            const cursor = parseISODate(selectedDateStr);
+            while (true) {
+                const iso = formatDateToISO(cursor);
+                const entry = surveysByDate[iso];
+                if (entry && entry.status === 'yes') {
+                    streak++;
+                    cursor.setDate(cursor.getDate() - 1);
                 } else {
-                    appState.presets.general = { ...DEFAULT_VIDEO_PRESETS.general };
-                    appState.activePresetId = 'general';
+                    break;
                 }
             }
-            return appState.presets[appState.activePresetId];
+            const countEl = document.getElementById('survey-streak-count');
+            if (countEl) {
+                countEl.textContent = String(streak);
+            }
         }
 
-        function extractYouTubeId(url) {
+        // =====================================================================
+        // VIDEO QUEUE PLAYER (YOUTUBE / REELS / MP4)
+        // =====================================================================
+        function parseVideoUrl(rawUrl) {
+            const url = String(rawUrl || '').trim();
             if (!url) return null;
-            const patterns = [
-                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-                /^([a-zA-Z0-9_-]{11})$/
-            ];
-            for (const p of patterns) {
-                const m = url.trim().match(p);
-                if (m) return m[1];
+
+            const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/i);
+            if (ytMatch) {
+                return {
+                    platform: 'youtube',
+                    youtubeId: ytMatch[1],
+                    label: 'YouTube'
+                };
             }
+
+            if (/instagram\.com\/(?:reel|reels|p)\//i.test(url)) {
+                return {
+                    platform: 'instagram',
+                    youtubeId: null,
+                    label: 'Instagram Reel'
+                };
+            }
+
+            if (/facebook\.com\/(?:reel|watch|share\/v)/i.test(url) || /fb\.watch\//i.test(url)) {
+                return {
+                    platform: 'facebook',
+                    youtubeId: null,
+                    label: 'Facebook Reel'
+                };
+            }
+
+            if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(url)) {
+                return {
+                    platform: 'mp4',
+                    youtubeId: null,
+                    label: 'Video MP4'
+                };
+            }
+
             return null;
         }
 
-        function detectPlatform(url) {
-            const lower = (url || '').toLowerCase();
-            if (extractYouTubeId(lower)) return 'YouTube';
-            if (lower.includes('instagram.com')) return 'Instagram';
-            if (lower.includes('facebook.com') || lower.includes('fb.watch')) return 'Facebook';
-            if (lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.ogg')) return 'MP4';
-            return 'Enlace';
-        }
-
         function clearSocialTimer() {
-            if (appState.socialTimer) {
-                clearInterval(appState.socialTimer);
-                appState.socialTimer = null;
+            if (socialTimerInterval) {
+                clearInterval(socialTimerInterval);
+                socialTimerInterval = null;
             }
             const helper = document.getElementById('social-reel-helper');
             if (helper) helper.classList.add('hidden');
         }
 
-        function startSocialCountdown(url) {
+        function loadVideoAtIndex(idx, autoplay = false) {
+            if (videoQueue.length === 0) return;
+            currentVideoIndex = ((idx % videoQueue.length) + videoQueue.length) % videoQueue.length;
+            localStorage.setItem(STORAGE_KEYS.VIDEO_INDEX, String(currentVideoIndex));
+
             clearSocialTimer();
+            const video = videoQueue[currentVideoIndex];
+            const stage = document.getElementById('video-stage');
+            const counterBadge = document.getElementById('video-counter-badge');
+            const platformBadge = document.getElementById('video-platform-badge');
+            const titleEl = document.getElementById('current-video-title');
+            const queueCountEl = document.getElementById('queue-count');
+
+            if (counterBadge) counterBadge.textContent = `Video ${currentVideoIndex + 1} de ${videoQueue.length}`;
+            if (platformBadge) platformBadge.textContent = video.label || (video.platform === 'youtube' ? 'YouTube' : 'Video');
+            if (titleEl) titleEl.textContent = video.title || `Video ${currentVideoIndex + 1}`;
+            if (queueCountEl) queueCountEl.textContent = String(videoQueue.length);
+
+            if (!stage) return;
+
+            if (video.platform === 'youtube' && video.youtubeId) {
+                stage.innerHTML = `<div id="yt-player-target" class="w-full h-full"></div>`;
+                mountYouTubePlayer(video.youtubeId, autoplay);
+            } else if (video.platform === 'mp4') {
+                stage.innerHTML = `
+                    <video src="${escapeHtml(video.url)}" controls ${autoplay ? 'autoplay' : ''} onended="handleVideoEnded()" class="w-full h-full object-contain bg-black"></video>
+                `;
+            } else {
+                const embedUrl = video.platform === 'instagram'
+                    ? (video.url.replace(/\/+$/, '') + '/embed/')
+                    : `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(video.url)}&show_text=false`;
+
+                stage.innerHTML = `
+                    <iframe src="${escapeHtml(embedUrl)}" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" allowfullscreen class="w-full h-full"></iframe>
+                `;
+                startSocialHelper(video.url);
+            }
+
+            renderQueueDrawerItems();
+        }
+
+        function mountYouTubePlayer(videoId, autoplay) {
+            if (!window.YT || !window.YT.Player || !ytApiReady) {
+                const stage = document.getElementById('video-stage');
+                if (stage) {
+                    const ap = autoplay ? 1 : 0;
+                    stage.innerHTML = `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=${ap}&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full"></iframe>`;
+                }
+                return;
+            }
+
+            if (ytPlayer && typeof ytPlayer.destroy === 'function') {
+                try { ytPlayer.destroy(); } catch (e) {}
+                ytPlayer = null;
+            }
+
+            ytPlayer = new window.YT.Player('yt-player-target', {
+                videoId,
+                playerVars: {
+                    autoplay: autoplay ? 1 : 0,
+                    rel: 0,
+                    modestbranding: 1,
+                    playsinline: 1
+                },
+                events: {
+                    onStateChange: function (event) {
+                        if (event.data === window.YT.PlayerState.ENDED) {
+                            handleVideoEnded();
+                        }
+                    },
+                    onError: function () {
+                        if (autoAdvance && videoQueue.length > 1) {
+                            playNextVideo();
+                        }
+                    }
+                }
+            });
+        }
+
+        window.onYouTubeIframeAPIReady = function () {
+            ytApiReady = true;
+            const current = videoQueue[currentVideoIndex];
+            if (current && current.platform === 'youtube' && current.youtubeId) {
+                const stage = document.getElementById('video-stage');
+                if (stage && document.getElementById('yt-player-target')) {
+                    mountYouTubePlayer(current.youtubeId, false);
+                }
+            }
+        };
+
+        function startSocialHelper(url) {
             const helper = document.getElementById('social-reel-helper');
             const countdownEl = document.getElementById('social-countdown-text');
             const extLink = document.getElementById('reel-external-link');
-            if (extLink) extLink.href = url;
-            if (!helper || !countdownEl) return;
+            if (!helper) return;
 
-            appState.socialRemaining = 30;
-            countdownEl.textContent = `${appState.socialRemaining}s`;
+            socialSecondsRemaining = 30;
+            if (countdownEl) countdownEl.textContent = `${socialSecondsRemaining}s`;
+            if (extLink) extLink.setAttribute('href', url);
             helper.classList.remove('hidden');
+            safeRefreshIcons();
 
-            appState.socialTimer = setInterval(() => {
-                appState.socialRemaining--;
-                countdownEl.textContent = `${Math.max(0, appState.socialRemaining)}s`;
-                if (appState.socialRemaining <= 0) {
+            socialTimerInterval = setInterval(() => {
+                socialSecondsRemaining--;
+                if (countdownEl) countdownEl.textContent = `${Math.max(0, socialSecondsRemaining)}s`;
+                if (socialSecondsRemaining <= 0) {
                     clearSocialTimer();
-                    if (appState.autoAdvance) playNextVideo();
+                    if (autoAdvance) {
+                        playNextVideo();
+                    }
                 }
             }, 1000);
         }
 
-        function playVideoAtIndex(index, autoplay = false) {
-            clearSocialTimer();
-            const preset = getActivePreset();
-            const videos = preset.videos || [];
-            if (videos.length === 0) {
-                document.getElementById('current-video-title').textContent = 'Lista sin videos';
-                document.getElementById('video-counter-badge').textContent = '0 de 0';
-                document.getElementById('video-stage').innerHTML = `<p class="text-xs text-zinc-500">Añade videos desde el botón "Lista".</p>`;
-                renderVideoQueue();
-                return;
+        function handleVideoEnded() {
+            if (autoAdvance) {
+                playNextVideo();
             }
-
-            const safeIdx = ((index % videos.length) + videos.length) % videos.length;
-            appState.currentVideoIndex = safeIdx;
-            const video = videos[safeIdx];
-            const platform = detectPlatform(video.url);
-
-            document.getElementById('video-counter-badge').textContent = `Video ${safeIdx + 1} de ${videos.length}`;
-            document.getElementById('video-platform-badge').textContent = platform;
-            document.getElementById('current-video-title').textContent = video.title || `Video ${safeIdx + 1}`;
-            document.getElementById('queue-count').textContent = String(videos.length);
-
-            const stage = document.getElementById('video-stage');
-            const ytId = extractYouTubeId(video.url);
-
-            if (ytId) {
-                const ap = autoplay ? 1 : 0;
-                stage.innerHTML = `
-                    <iframe src="https://www.youtube.com/embed/${ytId}?autoplay=${ap}&rel=0&modestbranding=1&playsinline=1"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowfullscreen></iframe>
-                `;
-            } else if (platform === 'MP4') {
-                stage.innerHTML = `<video src="${video.url}" controls ${autoplay ? 'autoplay' : ''} playsinline class="w-full h-full object-contain"></video>`;
-                const vidEl = stage.querySelector('video');
-                if (vidEl) {
-                    vidEl.addEventListener('ended', () => {
-                        if (appState.autoAdvance) playNextVideo();
-                    });
-                }
-            } else {
-                stage.innerHTML = `
-                    <div class="p-6 text-center space-y-3 max-w-sm">
-                        <p class="text-xs text-zinc-300">Contenido externo (${platform}). Puedes abrirlo en una pestaña o usar el avance automático.</p>
-                        <a href="${video.url}" target="_blank" rel="noopener noreferrer"
-                           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">
-                            <span>Abrir contenido</span>
-                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                        </a>
-                    </div>
-                `;
-                refreshIcons();
-                startSocialCountdown(video.url);
-            }
-
-            renderVideoQueue();
         }
 
         function playNextVideo() {
-            const videos = getActivePreset().videos || [];
-            if (!videos.length) return;
-            playVideoAtIndex(appState.currentVideoIndex + 1, true);
+            if (videoQueue.length === 0) return;
+            loadVideoAtIndex(currentVideoIndex + 1, true);
         }
 
         function playPreviousVideo() {
-            const videos = getActivePreset().videos || [];
-            if (!videos.length) return;
-            playVideoAtIndex(appState.currentVideoIndex - 1, true);
+            if (videoQueue.length === 0) return;
+            loadVideoAtIndex(currentVideoIndex - 1, true);
         }
 
         function toggleAutoAdvance(checked) {
-            appState.autoAdvance = Boolean(checked);
-            localStorage.setItem(STORAGE_KEYS.AUTO_ADVANCE, String(appState.autoAdvance));
-        }
-
-        function renderPresetSelectors() {
-            const optionsHtml = Object.values(appState.presets).map(p =>
-                `<option value="${p.id}" ${p.id === appState.activePresetId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`
-            ).join('');
-
-            const quickSelect = document.getElementById('quick-preset-select');
-            const drawerSelect = document.getElementById('drawer-preset-select');
-            if (quickSelect) quickSelect.innerHTML = optionsHtml;
-            if (drawerSelect) drawerSelect.innerHTML = optionsHtml;
-        }
-
-        function selectPresetManually(presetId) {
-            if (!appState.presets[presetId]) return;
-            appState.activePresetId = presetId;
-            localStorage.setItem(STORAGE_KEYS.ACTIVE_PRESET, presetId);
-            renderPresetSelectors();
-            playVideoAtIndex(0, false);
+            autoAdvance = Boolean(checked);
+            localStorage.setItem(STORAGE_KEYS.AUTO_ADVANCE, String(autoAdvance));
         }
 
         function toggleQueueDrawer() {
@@ -1256,426 +1557,129 @@
             if (!drawer) return;
             drawer.classList.toggle('hidden');
             if (!drawer.classList.contains('hidden')) {
-                renderPresetSelectors();
-                renderVideoQueue();
-                renderScheduleAssignmentTab();
+                renderQueueDrawerItems();
             }
+            safeRefreshIcons();
         }
 
-        function switchDrawerTab(tab) {
-            const tabVideos = document.getElementById('drawer-tab-videos');
-            const tabSchedule = document.getElementById('drawer-tab-schedule');
-            const btnVideos = document.getElementById('tab-btn-videos');
-            const btnSchedule = document.getElementById('tab-btn-schedule');
-
-            if (tab === 'videos') {
-                tabVideos.classList.remove('hidden');
-                tabSchedule.classList.add('hidden');
-                btnVideos.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 bg-zinc-800 text-white transition';
-                btnSchedule.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition';
-            } else {
-                tabVideos.classList.add('hidden');
-                tabSchedule.classList.remove('hidden');
-                btnSchedule.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 bg-zinc-800 text-white transition';
-                btnVideos.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition';
-                renderScheduleAssignmentTab();
-            }
-        }
-
-        function openPresetActionForm(mode) {
-            appState.presetFormMode = mode;
-            const form = document.getElementById('preset-name-form');
-            const input = document.getElementById('preset-name-input');
-            if (!form || !input) return;
-            form.classList.remove('hidden');
-            input.value = mode === 'rename' ? getActivePreset().name : '';
-            input.focus();
-        }
-
-        function closePresetNameForm() {
-            const form = document.getElementById('preset-name-form');
-            if (form) form.classList.add('hidden');
-        }
-
-        function submitPresetNameForm(event) {
+        function addVideoToQueue(event) {
             event.preventDefault();
-            const input = document.getElementById('preset-name-input');
-            const name = input ? input.value.trim() : '';
-            if (!name) return;
+            const titleInput = document.getElementById('new-video-title');
+            const urlInput = document.getElementById('new-video-url');
+            const errEl = document.getElementById('video-error-msg');
 
-            if (appState.presetFormMode === 'create') {
-                const id = 'preset_' + Date.now();
-                appState.presets[id] = { id, name, videos: [] };
-                appState.activePresetId = id;
-                localStorage.setItem(STORAGE_KEYS.ACTIVE_PRESET, id);
-            } else {
-                const active = getActivePreset();
-                active.name = name;
+            const rawUrl = urlInput ? urlInput.value.trim() : '';
+            const parsed = parseVideoUrl(rawUrl);
+
+            if (!parsed) {
+                if (errEl) {
+                    errEl.textContent = 'Enlace no reconocido. Usa YouTube, Instagram Reel, Facebook Reel o MP4 directo.';
+                    errEl.classList.remove('hidden');
+                }
+                return;
             }
 
-            saveToStorage(STORAGE_KEYS.VIDEO_PRESETS, appState.presets);
-            closePresetNameForm();
-            renderPresetSelectors();
-            playVideoAtIndex(0, false);
-        }
+            if (errEl) errEl.classList.add('hidden');
+            const customTitle = titleInput ? titleInput.value.trim() : '';
+            const item = {
+                id: 'vid_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                title: customTitle || `${parsed.label} #${videoQueue.length + 1}`,
+                url: rawUrl,
+                platform: parsed.platform,
+                youtubeId: parsed.youtubeId,
+                label: parsed.label
+            };
 
-        function deleteCurrentPreset() {
-            const ids = Object.keys(appState.presets);
-            if (ids.length <= 1) return;
-            delete appState.presets[appState.activePresetId];
-            appState.activePresetId = Object.keys(appState.presets)[0];
-            localStorage.setItem(STORAGE_KEYS.ACTIVE_PRESET, appState.activePresetId);
-            saveToStorage(STORAGE_KEYS.VIDEO_PRESETS, appState.presets);
-            renderPresetSelectors();
-            playVideoAtIndex(0, false);
-        }
+            videoQueue.push(item);
+            saveJSON(STORAGE_KEYS.VIDEOS, videoQueue);
 
-        function addVideoToActivePreset(event) {
-            event.preventDefault();
-            const titleInput = document.getElementById('new-video-title-input');
-            const urlInput = document.getElementById('new-video-url-input');
-            const url = urlInput ? urlInput.value.trim() : '';
-            if (!url) return;
-
-            const preset = getActivePreset();
-            const title = (titleInput && titleInput.value.trim()) || `Video ${preset.videos.length + 1}`;
-            preset.videos.push({
-                id: 'vid_' + Date.now(),
-                title,
-                url,
-                platform: detectPlatform(url)
-            });
-
-            saveToStorage(STORAGE_KEYS.VIDEO_PRESETS, appState.presets);
             if (titleInput) titleInput.value = '';
             if (urlInput) urlInput.value = '';
-            playVideoAtIndex(preset.videos.length - 1, false);
+
+            const newIndex = videoQueue.length - 1;
+            loadVideoAtIndex(newIndex, false);
         }
 
-        function removeVideoFromActivePreset(vidId) {
-            const preset = getActivePreset();
-            preset.videos = preset.videos.filter(v => v.id !== vidId);
-            saveToStorage(STORAGE_KEYS.VIDEO_PRESETS, appState.presets);
-            playVideoAtIndex(Math.min(appState.currentVideoIndex, Math.max(0, preset.videos.length - 1)), false);
-        }
+        function deleteVideoFromQueue(index) {
+            if (videoQueue.length <= 1) return;
+            videoQueue.splice(index, 1);
+            saveJSON(STORAGE_KEYS.VIDEOS, videoQueue);
 
-        function renderVideoQueue() {
-            const listEl = document.getElementById('video-queue-list');
-            if (!listEl) return;
-            const preset = getActivePreset();
-            const videos = preset.videos || [];
-
-            if (!videos.length) {
-                listEl.innerHTML = `<p class="text-xs text-zinc-500 text-center py-4">No hay videos en esta lista.</p>`;
-                return;
+            if (currentVideoIndex >= videoQueue.length) {
+                currentVideoIndex = 0;
             }
-
-            listEl.innerHTML = videos.map((v, idx) => {
-                const active = idx === appState.currentVideoIndex;
-                return `
-                    <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border ${
-                        active ? 'bg-emerald-950/30 border-emerald-500/40' : 'bg-zinc-950 border-zinc-800/80'
-                    }">
-                        <button type="button" onclick="playVideoAtIndex(${idx}, true)" class="flex items-center gap-2 min-w-0 flex-1 text-left">
-                            <span class="text-[11px] font-mono font-bold ${active ? 'text-emerald-400' : 'text-zinc-500'}">#${idx + 1}</span>
-                            <span class="text-xs font-medium truncate ${active ? 'text-white' : 'text-zinc-300'}">${escapeHtml(v.title)}</span>
-                        </button>
-                        <button type="button" onclick="removeVideoFromActivePreset('${v.id}')" title="Quitar video"
-                                class="p-1 rounded-lg text-zinc-500 hover:text-rose-400 transition">
-                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </div>
-                `;
-            }).join('');
-
-            refreshIcons();
+            loadVideoAtIndex(currentVideoIndex, false);
         }
 
-        function renderScheduleAssignmentTab() {
-            const container = document.getElementById('drawer-tab-schedule');
+        function renderQueueDrawerItems() {
+            const container = document.getElementById('queue-items-container');
+            const countEl = document.getElementById('queue-count');
+            if (countEl) countEl.textContent = String(videoQueue.length);
             if (!container) return;
-            const presetOptions = Object.values(appState.presets).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
 
-            container.innerHTML = DAY_NAMES_FULL.map((name, dow) => {
-                const assignedId = appState.dayAssignments[dow] || appState.activePresetId;
+            container.innerHTML = videoQueue.map((vid, idx) => {
+                const active = idx === currentVideoIndex;
                 return `
-                    <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800">
-                        <span class="text-xs font-semibold text-zinc-200">${name}</span>
-                        <select onchange="assignPresetToDay(${dow}, this.value)"
-                                class="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-indigo-500">
-                            ${presetOptions.replace(`value="${assignedId}"`, `value="${assignedId}" selected`)}
-                        </select>
+                    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl border ${
+                        active ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-zinc-950/80 border-zinc-800'
+                    }">
+                        <button type="button" onclick="loadVideoAtIndex(${idx}, true); toggleQueueDrawer();" class="flex items-center gap-2.5 min-w-0 flex-1 text-left">
+                            <span class="text-xs font-mono ${active ? 'text-emerald-400 font-bold' : 'text-zinc-500'}">${idx + 1}.</span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-zinc-100 truncate">${escapeHtml(vid.title)}</p>
+                                <p class="text-[10px] text-zinc-400 truncate">${escapeHtml(vid.label || vid.platform)} · ${escapeHtml(vid.url)}</p>
+                            </div>
+                        </button>
+                        ${videoQueue.length > 1 ? `
+                            <button type="button" onclick="deleteVideoFromQueue(${idx})" title="Quitar video"
+                                    class="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-950/40 transition shrink-0">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        ` : ''}
                     </div>
                 `;
             }).join('');
-        }
 
-        function assignPresetToDay(dow, presetId) {
-            appState.dayAssignments[dow] = presetId;
-            saveToStorage(STORAGE_KEYS.DAY_ASSIGNMENTS, appState.dayAssignments);
-        }
-
-        // Task-Linked Video Automation Helpers
-        function renderLinkedTaskSelector() {
-            const select = document.getElementById('video-linked-task-select');
-            const statusText = document.getElementById('linked-task-status-text');
-            if (!select) return;
-
-            const tasks = appState.tasksByDate[appState.selectedDate] || [];
-            const linkedId = appState.linkedTaskByDate[appState.selectedDate] || '';
-
-            select.innerHTML = `<option value="">-- Vincular a una tarea --</option>` + tasks.map(t =>
-                `<option value="${t.id}" ${t.id === linkedId ? 'selected' : ''}>${escapeHtml(t.startTime)} - ${escapeHtml(t.title)}</option>`
-            ).join('');
-
-            const linkedTask = tasks.find(t => t.id === linkedId);
-            if (statusText) {
-                statusText.textContent = linkedTask
-                    ? `Inicia automáticamente a las ${linkedTask.startTime} con "${linkedTask.title}"`
-                    : 'Sin tarea vinculada para inicio automático';
-            }
-        }
-
-        function setLinkedTaskForSelectedDate(taskId) {
-            if (appState.linkedTaskByDate[appState.selectedDate] === taskId) {
-                delete appState.linkedTaskByDate[appState.selectedDate];
-            } else {
-                appState.linkedTaskByDate[appState.selectedDate] = taskId;
-            }
-            saveToStorage(STORAGE_KEYS.LINKED_TASK_BY_DATE, appState.linkedTaskByDate);
-            renderDailyTasks();
-            renderLinkedTaskSelector();
-        }
-
-        function onLinkedTaskChange(taskId) {
-            if (taskId) {
-                appState.linkedTaskByDate[appState.selectedDate] = taskId;
-            } else {
-                delete appState.linkedTaskByDate[appState.selectedDate];
-            }
-            saveToStorage(STORAGE_KEYS.LINKED_TASK_BY_DATE, appState.linkedTaskByDate);
-            renderDailyTasks();
-            renderLinkedTaskSelector();
-        }
-
-        function triggerLinkedTaskVideoNow() {
-            const dow = parseDateStr(getTodayStr()).getDay();
-            const dayPresetId = appState.dayAssignments[dow];
-            if (dayPresetId && appState.presets[dayPresetId]) {
-                appState.activePresetId = dayPresetId;
-                localStorage.setItem(STORAGE_KEYS.ACTIVE_PRESET, dayPresetId);
-                renderPresetSelectors();
-            }
-            playVideoAtIndex(0, true);
+            safeRefreshIcons();
         }
 
         // =====================================================================
-        // EXPORT & SYNC TASKS ACROSS DEVICES
+        // INITIALIZATION & PWA REGISTRATION
         // =====================================================================
-        function buildTasksExportPayload() {
-            return {
-                app: 'RutinaDiaria',
-                version: 1,
-                exportedAt: new Date().toISOString(),
-                tasksByDate: appState.tasksByDate || {},
-                linkedTaskByDate: appState.linkedTaskByDate || {}
-            };
-        }
-
-        function setSyncFeedback(message, isError = false) {
-            const el = document.getElementById('task-sync-feedback');
-            if (!el) return;
-            el.textContent = message;
-            el.className = `text-[11px] ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
-            el.classList.remove('hidden');
-        }
-
-        function exportTasksFile() {
+        function registerInlinePWA() {
             try {
-                const payload = buildTasksExportPayload();
-                const jsonStr = JSON.stringify(payload, null, 2);
-                const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `tareas_rutina_${getTodayStr()}.json`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-                setSyncFeedback(`Archivo exportado (${Object.keys(payload.tasksByDate).length} días con tareas).`);
-            } catch (_e) {
-                setSyncFeedback('No se pudo generar el archivo de exportación.', true);
-            }
-        }
-
-        function triggerImportTasksFile() {
-            const input = document.getElementById('import-tasks-file-input');
-            if (input) {
-                input.value = '';
-                input.click();
-            }
-        }
-
-        function mergeImportedTasksData(importedData) {
-            if (!importedData || typeof importedData !== 'object') {
-                throw new Error('Formato inválido');
-            }
-
-            const incomingTasks = importedData.tasksByDate && typeof importedData.tasksByDate === 'object'
-                ? importedData.tasksByDate
-                : importedData;
-
-            if (!incomingTasks || typeof incomingTasks !== 'object' || Array.isArray(incomingTasks)) {
-                throw new Error('Estructura de tareas no válida');
-            }
-
-            let importedCount = 0;
-
-            Object.keys(incomingTasks).forEach(dateKey => {
-                const dayList = incomingTasks[dateKey];
-                if (!Array.isArray(dayList)) return;
-
-                if (!Array.isArray(appState.tasksByDate[dateKey])) {
-                    appState.tasksByDate[dateKey] = [];
+                if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+                    const swCode = `
+                        self.addEventListener('install', () => self.skipWaiting());
+                        self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
+                    `;
+                    const blob = new Blob([swCode], { type: 'application/javascript' });
+                    const swUrl = URL.createObjectURL(blob);
+                    navigator.serviceWorker.register(swUrl).catch(() => {});
                 }
-
-                const existingIds = new Set(appState.tasksByDate[dateKey].map(t => t.id));
-
-                dayList.forEach(rawTask => {
-                    if (!rawTask || typeof rawTask !== 'object' || !rawTask.title) return;
-                    const safeId = rawTask.id && !existingIds.has(rawTask.id)
-                        ? rawTask.id
-                        : 'imp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
-
-                    appState.tasksByDate[dateKey].push({
-                        id: safeId,
-                        seriesId: rawTask.seriesId || null,
-                        startTime: rawTask.startTime || '08:00',
-                        endTime: rawTask.endTime || '08:30',
-                        title: String(rawTask.title),
-                        completed: Boolean(rawTask.completed)
-                    });
-                    existingIds.add(safeId);
-                    importedCount++;
-                });
-
-                appState.tasksByDate[dateKey].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
-            });
-
-            if (importedData.linkedTaskByDate && typeof importedData.linkedTaskByDate === 'object') {
-                Object.keys(importedData.linkedTaskByDate).forEach(dateKey => {
-                    if (!appState.linkedTaskByDate[dateKey] && importedData.linkedTaskByDate[dateKey]) {
-                        appState.linkedTaskByDate[dateKey] = importedData.linkedTaskByDate[dateKey];
-                    }
-                });
-                saveToStorage(STORAGE_KEYS.LINKED_TASK_BY_DATE, appState.linkedTaskByDate);
-            }
-
-            saveToStorage(STORAGE_KEYS.TASKS, appState.tasksByDate);
-            renderDateHeaderAndStrip();
-            renderDailyTasks();
-            renderLinkedTaskSelector();
-            updateSurveySyncSummary();
-
-            return importedCount;
-        }
-
-        function importTasksFromFile(event) {
-            const file = event && event.target && event.target.files ? event.target.files[0] : null;
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const parsed = JSON.parse(String(e.target.result || ''));
-                    const count = mergeImportedTasksData(parsed);
-                    const panel = document.getElementById('task-sync-panel');
-                    if (panel) panel.classList.remove('hidden');
-                    setSyncFeedback(`Se importaron y sincronizaron ${count} tareas correctamente.`);
-                } catch (_err) {
-                    const panel = document.getElementById('task-sync-panel');
-                    if (panel) panel.classList.remove('hidden');
-                    setSyncFeedback('El archivo seleccionado no tiene un formato JSON válido.', true);
-                }
-            };
-            reader.readAsText(file, 'utf-8');
-        }
-
-        function toggleSyncCodePanel() {
-            const panel = document.getElementById('task-sync-panel');
-            const textarea = document.getElementById('task-sync-textarea');
-            if (!panel) return;
-            panel.classList.toggle('hidden');
-            if (!panel.classList.contains('hidden') && textarea) {
-                const payload = buildTasksExportPayload();
-                textarea.value = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+            } catch (e) {
+                console.warn('PWA SW skipped:', e);
             }
         }
 
-        function copySyncCodeToClipboard() {
-            const textarea = document.getElementById('task-sync-textarea');
-            if (!textarea) return;
-            const payload = buildTasksExportPayload();
-            const code = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-            textarea.value = code;
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                setSyncFeedback('Código copiado. Pégalo en tu otro dispositivo y pulsa "Aplicar código".');
-            } catch (_e) {
-                setSyncFeedback('Código listo para copiar manualmente.', false);
-            }
-        }
-
-        function applySyncCodeFromTextarea() {
-            const textarea = document.getElementById('task-sync-textarea');
-            if (!textarea) return;
-            const raw = textarea.value.trim();
-            if (!raw) {
-                setSyncFeedback('Pega primero un código de sincronización o JSON.', true);
-                return;
-            }
-
-            try {
-                let parsed;
-                if (raw.startsWith('{')) {
-                    parsed = JSON.parse(raw);
-                } else {
-                    const decodedJson = decodeURIComponent(escape(atob(raw)));
-                    parsed = JSON.parse(decodedJson);
-                }
-                const count = mergeImportedTasksData(parsed);
-                setSyncFeedback(`Sincronización completa: ${count} tareas integradas.`);
-            } catch (_e) {
-                setSyncFeedback('Código inválido. Verifica que lo hayas copiado completo.', true);
-            }
-        }
-
-        // =====================================================================
-        // INITIALIZATION
-        // =====================================================================
         window.addEventListener('DOMContentLoaded', () => {
             const autoToggle = document.getElementById('auto-advance-toggle');
-            if (autoToggle) autoToggle.checked = appState.autoAdvance;
+            if (autoToggle) autoToggle.checked = autoAdvance;
 
             updateAlarmToggleUI();
-            updateClock();
-            renderDateHeaderAndStrip();
+            renderCalendarHeaderAndStrip();
             renderDailyTasks();
-            renderSpotifyPlaylistsUI();
-            renderLinkedTaskSelector();
+            renderSpotifySection();
             loadSurveyForSelectedDate();
-            updateSurveySyncSummary();
-            renderPresetSelectors();
-            playVideoAtIndex(0, false);
+            loadVideoAtIndex(currentVideoIndex, false);
+            updateClockAndAlarms();
+            setInterval(updateClockAndAlarms, 1000);
+            safeRefreshIcons();
+            registerInlinePWA();
 
-            refreshIcons();
-
-            setInterval(() => {
-                updateClock();
-                monitorTasksAndLinkedVideo();
-            }, 1000);
+            const ytScript = document.createElement('script');
+            ytScript.src = 'https://www.youtube.com/iframe_api';
+            document.head.appendChild(ytScript);
         });
     </script>
 </body>
