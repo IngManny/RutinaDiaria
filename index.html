@@ -70,7 +70,7 @@
 </head>
 <body class="bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-emerald-500/30 selection:text-emerald-200 overflow-x-hidden lg:overflow-hidden">
 
-    <!-- Main 4-Column Full-Height Container -->
+    <!-- Main 4-Row Full-Height Container -->
     <div class="min-h-screen lg:h-screen w-full flex flex-col bg-zinc-950">
 
         <!-- Top Global Header -->
@@ -285,9 +285,9 @@
                 </div>
             </section>
 
-            <!-- ROW 3: Daily Task Completion Survey -->
+            <!-- ROW 3: Daily Task Completion Survey & Weekly Chart -->
             <section class="w-full min-h-[210px] lg:flex-1 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl overflow-hidden">
-                <div class="flex items-center justify-between gap-2 pb-2 border-b border-zinc-800/80 shrink-0">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-zinc-800/80 shrink-0">
                     <div class="flex items-center gap-2 min-w-0">
                         <div class="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 shrink-0">
                             <i data-lucide="clipboard-check" class="w-4 h-4"></i>
@@ -304,11 +304,45 @@
                         <span id="survey-saved-indicator" class="hidden px-2 py-0.5 rounded-md text-[10px] font-semibold bg-zinc-800 text-emerald-400 border border-emerald-500/30">
                             Guardado
                         </span>
+                        <button type="button" onclick="toggleWeeklyChart()" title="Ver gráfica de pastel semanal"
+                                class="px-2.5 py-1 rounded-full bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold flex items-center gap-1 transition">
+                            <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-indigo-400"></i>
+                            <span>Gráfica semanal</span>
+                        </button>
                         <span id="survey-streak-badge" title="Días consecutivos marcados como cumplidos"
                               class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
                             <i data-lucide="flame" class="w-3.5 h-3.5 text-amber-400"></i>
                             <span><span id="survey-streak-count">0</span> d</span>
                         </span>
+                    </div>
+                </div>
+
+                <!-- Collapsible Weekly Pie Chart & Auto-Generated Analysis -->
+                <div id="weekly-chart-panel" class="hidden my-2 p-3 rounded-xl bg-zinc-950 border border-zinc-800 shrink-0">
+                    <div class="flex items-center justify-between gap-2 mb-2.5">
+                        <span class="text-[11px] font-semibold text-indigo-300">Distribución semanal de actividades (últimos 7 días)</span>
+                        <button type="button" onclick="toggleWeeklyChart()" class="text-[11px] text-zinc-400 hover:text-zinc-200 transition">
+                            Cerrar
+                        </button>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-center gap-4">
+                        <!-- Donut / Pie Chart -->
+                        <div class="relative w-28 h-28 shrink-0 flex items-center justify-center">
+                            <div id="weekly-pie-chart" class="w-full h-full rounded-full border border-zinc-800 shadow-inner transition-all duration-300"
+                                 style="background: conic-gradient(#27272a 0% 100%);"></div>
+                            <div class="absolute inset-3.5 rounded-full bg-zinc-950 border border-zinc-800/80 flex flex-col items-center justify-center text-center">
+                                <span id="weekly-pie-main-pct" class="text-sm font-bold text-white leading-none">0%</span>
+                                <span class="text-[9px] text-zinc-400 mt-0.5">Completado</span>
+                            </div>
+                        </div>
+
+                        <!-- Breakdown Legend & Auto-Generated Text -->
+                        <div class="flex-1 min-w-0 w-full space-y-2">
+                            <div id="weekly-pie-legend" class="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[11px]"></div>
+                            <div class="p-2.5 rounded-xl bg-zinc-900/90 border border-zinc-800/80">
+                                <p id="weekly-auto-summary-text" class="text-xs text-zinc-200 leading-relaxed"></p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -851,6 +885,7 @@
             renderCalendarHeaderAndStrip();
             renderDailyTasks();
             loadSurveyForSelectedDate();
+            renderWeeklyPieChart();
         }
 
         function computeTargetDatesForGroup(baseDateStr, groupMode) {
@@ -929,6 +964,7 @@
             renderCalendarHeaderAndStrip();
             renderDailyTasks(true);
             updateSurveySummaryFromTasks();
+            renderWeeklyPieChart();
         }
 
         function toggleTaskCompletion(taskId) {
@@ -939,6 +975,7 @@
             saveJSON(STORAGE_KEYS.TASKS, tasksByDate);
             renderDailyTasks();
             updateSurveySummaryFromTasks();
+            renderWeeklyPieChart();
         }
 
         function deleteDailyTask(taskId) {
@@ -963,6 +1000,43 @@
             renderCalendarHeaderAndStrip();
             renderDailyTasks();
             updateSurveySummaryFromTasks();
+            renderWeeklyPieChart();
+        }
+
+        function toggleTaskCompletion(taskId) {
+            const list = tasksByDate[selectedDateStr] || [];
+            const task = list.find(t => t.id === taskId);
+            if (!task) return;
+            task.completed = !task.completed;
+            saveJSON(STORAGE_KEYS.TASKS, tasksByDate);
+            renderDailyTasks();
+            updateSurveySummaryFromTasks();
+            renderWeeklyChart();
+        }
+
+        function deleteDailyTask(taskId) {
+            const list = tasksByDate[selectedDateStr] || [];
+            const targetTask = list.find(t => t.id === taskId);
+
+            if (targetTask && targetTask.batchId) {
+                Object.keys(tasksByDate).forEach(dateKey => {
+                    tasksByDate[dateKey] = (tasksByDate[dateKey] || []).filter(t => t.batchId !== targetTask.batchId);
+                    if (tasksByDate[dateKey].length === 0) {
+                        delete tasksByDate[dateKey];
+                    }
+                });
+            } else {
+                tasksByDate[selectedDateStr] = list.filter(t => t.id !== taskId);
+                if (tasksByDate[selectedDateStr].length === 0) {
+                    delete tasksByDate[selectedDateStr];
+                }
+            }
+
+            saveJSON(STORAGE_KEYS.TASKS, tasksByDate);
+            renderCalendarHeaderAndStrip();
+            renderDailyTasks();
+            updateSurveySummaryFromTasks();
+            renderWeeklyChart();
         }
 
         function renderDailyTasks(scrollToBottom = false) {
@@ -1231,6 +1305,7 @@
             renderSpotifySection();
             updateSurveySummaryFromTasks();
             loadSurveyForSelectedDate();
+            renderWeeklyPieChart();
             renderVideoPlaylistSelect();
             loadVideoAtIndex(currentVideoIndex, false);
             refreshSyncCodeField();
@@ -1413,7 +1488,7 @@
         }
 
         // =====================================================================
-        // DAILY SURVEY & STREAK
+        // DAILY SURVEY, STREAK & WEEKLY CHART
         // =====================================================================
         function updateSurveySummaryFromTasks() {
             const list = tasksByDate[selectedDateStr] || [];
@@ -1467,6 +1542,197 @@
                 setTimeout(() => badge.classList.add('hidden'), 1800);
             }
             updateStreakCounter();
+            renderWeeklyPieChart();
+        }
+
+        function toggleWeeklyChart() {
+            const panel = document.getElementById('weekly-chart-panel');
+            if (!panel) return;
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                renderWeeklyPieChart();
+            }
+            safeRefreshIcons();
+        }
+
+        function renderWeeklyPieChart() {
+            const pieEl = document.getElementById('weekly-pie-chart');
+            const mainPctEl = document.getElementById('weekly-pie-main-pct');
+            const legendEl = document.getElementById('weekly-pie-legend');
+            const summaryTextEl = document.getElementById('weekly-auto-summary-text');
+            if (!pieEl || !mainPctEl || !legendEl || !summaryTextEl) return;
+
+            const anchorDate = parseISODate(selectedDateStr);
+            let totalTasks = 0;
+            let completedTasks = 0;
+            let pendingTasks = 0;
+            let partialDaysCount = 0;
+            let noDaysCount = 0;
+            let yesDaysCount = 0;
+            let daysWithActivity = 0;
+
+            for (let offset = -6; offset <= 0; offset++) {
+                const d = new Date(anchorDate);
+                d.setDate(anchorDate.getDate() + offset);
+                const iso = formatDateToISO(d);
+                const dayTasks = tasksByDate[iso] || [];
+                const survey = surveysByDate[iso];
+
+                if (dayTasks.length > 0 || survey) {
+                    daysWithActivity++;
+                }
+
+                totalTasks += dayTasks.length;
+                completedTasks += dayTasks.filter(t => t.completed).length;
+
+                if (survey) {
+                    if (survey.status === 'yes') yesDaysCount++;
+                    else if (survey.status === 'partial') partialDaysCount++;
+                    else if (survey.status === 'no') noDaysCount++;
+                }
+            }
+
+            pendingTasks = Math.max(0, totalTasks - completedTasks);
+
+            let completedPct = 0;
+            let partialPct = 0;
+            let pendingPct = 0;
+
+            if (totalTasks > 0) {
+                completedPct = Math.round((completedTasks / totalTasks) * 100);
+                // Estimate partial share from pending tasks on days marked as 'partial'
+                const rawPendingPct = 100 - completedPct;
+                if (partialDaysCount > 0 && rawPendingPct > 0) {
+                    partialPct = Math.min(rawPendingPct, Math.round(rawPendingPct * 0.45));
+                    pendingPct = Math.max(0, rawPendingPct - partialPct);
+                } else {
+                    partialPct = 0;
+                    pendingPct = rawPendingPct;
+                }
+            } else if (yesDaysCount + partialDaysCount + noDaysCount > 0) {
+                const totalEvalDays = yesDaysCount + partialDaysCount + noDaysCount;
+                completedPct = Math.round((yesDaysCount / totalEvalDays) * 100);
+                partialPct = Math.round((partialDaysCount / totalEvalDays) * 100);
+                pendingPct = Math.max(0, 100 - completedPct - partialPct);
+            }
+
+            mainPctEl.textContent = `${completedPct}%`;
+
+            if (totalTasks === 0 && (yesDaysCount + partialDaysCount + noDaysCount) === 0) {
+                pieEl.style.background = 'conic-gradient(#27272a 0% 100%)';
+            } else {
+                const stop1 = completedPct;
+                const stop2 = Math.min(100, completedPct + partialPct);
+                pieEl.style.background = `conic-gradient(#10b981 0% ${stop1}%, #f59e0b ${stop1}% ${stop2}%, #f43f5e ${stop2}% 100%)`;
+            }
+
+            legendEl.innerHTML = `
+                <div class="flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
+                    <span class="flex items-center gap-1.5 text-zinc-300 truncate">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                        <span>Completadas</span>
+                    </span>
+                    <strong class="text-emerald-400 font-mono">${completedPct}%</strong>
+                </div>
+                <div class="flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
+                    <span class="flex items-center gap-1.5 text-zinc-300 truncate">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                        <span>Parcial</span>
+                    </span>
+                    <strong class="text-amber-400 font-mono">${partialPct}%</strong>
+                </div>
+                <div class="flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
+                    <span class="flex items-center gap-1.5 text-zinc-300 truncate">
+                        <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                        <span>Sin cumplir</span>
+                    </span>
+                    <strong class="text-rose-400 font-mono">${pendingPct}%</strong>
+                </div>
+            `;
+
+            // Auto-generated narrative summary based on chart metrics
+            let autoNarrative = '';
+            if (totalTasks === 0 && daysWithActivity === 0) {
+                autoNarrative = 'Aún no hay actividades ni evaluaciones registradas en los últimos 7 días. Agrega tareas en tu calendario o guarda tu evaluación diaria para generar el análisis semanal.';
+            } else if (totalTasks > 0) {
+                if (completedPct >= 80) {
+                    autoNarrative = `Excelente ritmo semanal: completaste ${completedTasks} de ${totalTasks} actividades (${completedPct}%), manteniendo una alta constancia en ${daysWithActivity} días activos.`;
+                } else if (completedPct >= 50) {
+                    autoNarrative = `Buen avance semanal: llevas ${completedTasks} de ${totalTasks} actividades completadas (${completedPct}%), con ${partialPct}% en progreso parcial y ${pendingTasks} pendientes por cerrar.`;
+                } else if (completedPct > 0) {
+                    autoNarrative = `Semana en desarrollo: se completó el ${completedPct}% (${completedTasks} de ${totalTasks} actividades). Prioriza las ${pendingTasks} tareas restantes para equilibrar tu gráfica.`;
+                } else {
+                    autoNarrative = `Tienes ${totalTasks} actividades programadas esta semana (0% completadas aún). Marca tus tareas realizadas para ver crecer el porcentaje verde de la gráfica.`;
+                }
+            } else {
+                autoNarrative = `Según tus evaluaciones guardadas de la semana, el ${completedPct}% de los días fueron cumplidos al 100%, ${partialPct}% parcialmente y ${pendingPct}% quedaron sin cumplir.`;
+            }
+
+            summaryTextEl.textContent = autoNarrative;
+        }
+
+        function toggleWeeklyChart() {
+            const panel = document.getElementById('weekly-chart-panel');
+            if (!panel) return;
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                renderWeeklyChart();
+            }
+            safeRefreshIcons();
+        }
+
+        function renderWeeklyChart() {
+            const container = document.getElementById('weekly-chart-bars');
+            if (!container) return;
+
+            const anchorDate = parseISODate(selectedDateStr);
+            const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            let barsHtml = '';
+
+            for (let offset = -6; offset <= 0; offset++) {
+                const d = new Date(anchorDate);
+                d.setDate(anchorDate.getDate() + offset);
+                const iso = formatDateToISO(d);
+                const dayTasks = tasksByDate[iso] || [];
+                const total = dayTasks.length;
+                const completed = dayTasks.filter(t => t.completed).length;
+                const survey = surveysByDate[iso];
+
+                let pct = 0;
+                if (total > 0) {
+                    pct = Math.round((completed / total) * 100);
+                } else if (survey) {
+                    pct = survey.status === 'yes' ? 100 : survey.status === 'partial' ? 50 : 15;
+                }
+
+                let barColor = 'bg-zinc-700';
+                if (survey && survey.status === 'yes') {
+                    barColor = 'bg-emerald-500';
+                } else if (survey && survey.status === 'partial') {
+                    barColor = 'bg-amber-400';
+                } else if (survey && survey.status === 'no') {
+                    barColor = 'bg-rose-500';
+                } else if (total > 0) {
+                    barColor = pct === 100 ? 'bg-emerald-500' : pct > 0 ? 'bg-indigo-500' : 'bg-zinc-700';
+                }
+
+                const isSelected = iso === selectedDateStr;
+                const barHeight = Math.max(8, pct);
+
+                barsHtml += `
+                    <button type="button" onclick="selectDateFromPicker('${iso}')"
+                            title="${dayNames[d.getDay()]} ${d.getDate()}: ${pct}% (${completed}/${total} tareas)"
+                            class="flex flex-col items-center justify-end h-full gap-1 group focus:outline-none">
+                        <span class="text-[9px] font-mono text-zinc-400 group-hover:text-white">${pct}%</span>
+                        <div class="w-full max-w-[26px] h-14 bg-zinc-900 rounded-lg border ${isSelected ? 'border-indigo-400' : 'border-zinc-800'} flex items-end p-0.5 overflow-hidden">
+                            <div class="w-full rounded-md transition-all duration-300 ${barColor}" style="height: ${barHeight}%"></div>
+                        </div>
+                        <span class="text-[10px] font-medium ${isSelected ? 'text-indigo-300 font-bold' : 'text-zinc-500'}">${dayNames[d.getDay()]}</span>
+                    </button>
+                `;
+            }
+
+            container.innerHTML = barsHtml;
         }
 
         function loadSurveyForSelectedDate() {
@@ -1950,6 +2216,7 @@
             renderSpotifySection();
             updateSurveySummaryFromTasks();
             loadSurveyForSelectedDate();
+            renderWeeklyPieChart();
             renderVideoPlaylistSelect();
             loadVideoAtIndex(currentVideoIndex, false);
             updateClockAndAlarms();
