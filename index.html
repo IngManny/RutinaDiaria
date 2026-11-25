@@ -154,7 +154,7 @@
                 <!-- Collapsible Export / Import / Sync Panel -->
                 <div id="sync-tasks-panel" class="hidden my-2 p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2 shrink-0">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="text-[11px] font-semibold text-indigo-300">Exportar o sincronizar tareas entre dispositivos</span>
+                        <span class="text-[11px] font-semibold text-indigo-300">Exportar o sincronizar tareas, playlists y videos</span>
                         <div class="flex items-center gap-1.5">
                             <button type="button" onclick="exportTasksJson()"
                                     class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold flex items-center gap-1 transition">
@@ -169,7 +169,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5">
-                        <input type="text" id="sync-code-field" placeholder="Código portátil de tareas para copiar o pegar en otro dispositivo..."
+                        <input type="text" id="sync-code-field" placeholder="Código portátil de tareas, playlists y videos para otro dispositivo..."
                                class="flex-1 min-w-0 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-[11px] text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500">
                         <button type="button" onclick="copySyncCode()"
                                 class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium shrink-0 transition">
@@ -982,10 +982,14 @@
 
         function buildSyncPayload() {
             return JSON.stringify({
-                version: 1,
+                version: 2,
                 exportedAt: new Date().toISOString(),
                 tasksByDate,
-                surveysByDate
+                surveysByDate,
+                spotifyLists,
+                activeSpotifyId,
+                videoQueue,
+                currentVideoIndex
             });
         }
 
@@ -1033,13 +1037,13 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `rutina-tareas-${formatDateToISO(new Date())}.json`;
+                a.download = `rutina-completa-${formatDateToISO(new Date())}.json`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 refreshSyncCodeField();
-                setSyncStatus('Archivo JSON descargado. Ábrelo o impórtalo en tu otro dispositivo.');
+                setSyncStatus('JSON completo exportado (tareas, playlists y videos).');
             } catch (e) {
                 setSyncStatus('No se pudo exportar el archivo JSON.', true);
             }
@@ -1051,50 +1055,103 @@
             }
             const incomingTasks = parsed.tasksByDate && typeof parsed.tasksByDate === 'object'
                 ? parsed.tasksByDate
-                : (typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null);
+                : (typeof parsed === 'object' && !Array.isArray(parsed) && !parsed.spotifyLists && !parsed.videoQueue ? parsed : null);
 
-            if (!incomingTasks) {
-                throw new Error('Sin tareas válidas');
-            }
+            if (incomingTasks) {
+                Object.keys(incomingTasks).forEach(dateKey => {
+                    const incomingList = Array.isArray(incomingTasks[dateKey]) ? incomingTasks[dateKey] : [];
+                    const existingList = Array.isArray(tasksByDate[dateKey]) ? tasksByDate[dateKey] : [];
+                    const existingIds = new Set(existingList.map(t => t.id));
 
-            Object.keys(incomingTasks).forEach(dateKey => {
-                const incomingList = Array.isArray(incomingTasks[dateKey]) ? incomingTasks[dateKey] : [];
-                const existingList = Array.isArray(tasksByDate[dateKey]) ? tasksByDate[dateKey] : [];
-                const existingIds = new Set(existingList.map(t => t.id));
+                    incomingList.forEach(item => {
+                        if (!item || !item.title) return;
+                        const id = item.id || ('task_imp_' + Math.random().toString(36).slice(2, 8));
+                        if (!existingIds.has(id)) {
+                            existingList.push({
+                                id,
+                                batchId: item.batchId || null,
+                                title: String(item.title),
+                                startTime: item.startTime || '08:00',
+                                endTime: item.endTime || '08:30',
+                                completed: Boolean(item.completed),
+                                autoStartVideo: Boolean(item.autoStartVideo)
+                            });
+                            existingIds.add(id);
+                        }
+                    });
 
-                incomingList.forEach(item => {
-                    if (!item || !item.title) return;
-                    const id = item.id || ('task_imp_' + Math.random().toString(36).slice(2, 8));
-                    if (!existingIds.has(id)) {
-                        existingList.push({
-                            id,
-                            batchId: item.batchId || null,
-                            title: String(item.title),
-                            startTime: item.startTime || '08:00',
-                            endTime: item.endTime || '08:30',
-                            completed: Boolean(item.completed),
-                            autoStartVideo: Boolean(item.autoStartVideo)
-                        });
-                        existingIds.add(id);
+                    existingList.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+                    if (existingList.length > 0) {
+                        tasksByDate[dateKey] = existingList;
                     }
                 });
-
-                existingList.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
-                if (existingList.length > 0) {
-                    tasksByDate[dateKey] = existingList;
-                }
-            });
+                saveJSON(STORAGE_KEYS.TASKS, tasksByDate);
+            }
 
             if (parsed.surveysByDate && typeof parsed.surveysByDate === 'object') {
                 surveysByDate = { ...surveysByDate, ...parsed.surveysByDate };
                 saveJSON(STORAGE_KEYS.SURVEYS, surveysByDate);
             }
 
-            saveJSON(STORAGE_KEYS.TASKS, tasksByDate);
+            if (Array.isArray(parsed.spotifyLists)) {
+                const existingIds = new Set(spotifyLists.map(p => p.id));
+                const existingUrls = new Set(spotifyLists.map(p => p.embedUrl));
+                parsed.spotifyLists.forEach(item => {
+                    if (!item || !item.embedUrl) return;
+                    const id = item.id || ('sp_imp_' + Math.random().toString(36).slice(2, 8));
+                    if (!existingIds.has(id) && !existingUrls.has(item.embedUrl)) {
+                        spotifyLists.push({
+                            id,
+                            name: String(item.name || 'Playlist Spotify'),
+                            url: String(item.url || item.embedUrl),
+                            embedUrl: String(item.embedUrl)
+                        });
+                        existingIds.add(id);
+                        existingUrls.add(item.embedUrl);
+                    }
+                });
+                if (parsed.activeSpotifyId && spotifyLists.some(p => p.id === parsed.activeSpotifyId)) {
+                    activeSpotifyId = parsed.activeSpotifyId;
+                    localStorage.setItem(STORAGE_KEYS.SPOTIFY_ACTIVE, activeSpotifyId);
+                } else if (!activeSpotifyId && spotifyLists[0]) {
+                    activeSpotifyId = spotifyLists[0].id;
+                    localStorage.setItem(STORAGE_KEYS.SPOTIFY_ACTIVE, activeSpotifyId);
+                }
+                saveJSON(STORAGE_KEYS.SPOTIFY_LISTS, spotifyLists);
+            }
+
+            if (Array.isArray(parsed.videoQueue) && parsed.videoQueue.length > 0) {
+                const existingIds = new Set(videoQueue.map(v => v.id));
+                const existingUrls = new Set(videoQueue.map(v => v.url));
+                parsed.videoQueue.forEach(vid => {
+                    if (!vid || !vid.url) return;
+                    const id = vid.id || ('vid_imp_' + Math.random().toString(36).slice(2, 8));
+                    if (!existingIds.has(id) && !existingUrls.has(vid.url)) {
+                        videoQueue.push({
+                            id,
+                            title: String(vid.title || 'Video importado'),
+                            url: String(vid.url),
+                            platform: vid.platform || 'youtube',
+                            youtubeId: vid.youtubeId || null,
+                            label: vid.label || 'Video'
+                        });
+                        existingIds.add(id);
+                        existingUrls.add(vid.url);
+                    }
+                });
+                saveJSON(STORAGE_KEYS.VIDEOS, videoQueue);
+                if (typeof parsed.currentVideoIndex === 'number' && parsed.currentVideoIndex >= 0 && parsed.currentVideoIndex < videoQueue.length) {
+                    currentVideoIndex = parsed.currentVideoIndex;
+                    localStorage.setItem(STORAGE_KEYS.VIDEO_INDEX, String(currentVideoIndex));
+                }
+            }
+
             renderCalendarHeaderAndStrip();
             renderDailyTasks();
+            renderSpotifySection();
             updateSurveySummaryFromTasks();
             loadSurveyForSelectedDate();
+            loadVideoAtIndex(currentVideoIndex, false);
             refreshSyncCodeField();
         }
 
@@ -1106,9 +1163,9 @@
                 try {
                     const parsed = JSON.parse(String(e.target.result || ''));
                     mergeImportedData(parsed);
-                    setSyncStatus('Tareas importadas y sincronizadas correctamente.');
+                    setSyncStatus('Tareas, playlists y videos importados correctamente.');
                 } catch (err) {
-                    setSyncStatus('El archivo seleccionado no es un JSON válido de tareas.', true);
+                    setSyncStatus('El archivo seleccionado no es un JSON válido.', true);
                 }
                 event.target.value = '';
             };
@@ -1143,7 +1200,7 @@
                     parsed = decodeSyncCode(raw);
                 }
                 mergeImportedData(parsed);
-                setSyncStatus('Código aplicado: tus tareas quedaron sincronizadas.');
+                setSyncStatus('Código aplicado: tareas, playlists y videos sincronizados.');
             } catch (err) {
                 setSyncStatus('Código de sincronización no válido.', true);
             }
