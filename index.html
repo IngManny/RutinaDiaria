@@ -228,8 +228,8 @@
 
             <!-- ROW 2: Spotify Playlists (Add, Switch & Delete) -->
             <section class="w-full min-h-[240px] lg:flex-1 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl overflow-hidden">
-                <div class="flex items-center justify-between gap-2 mb-2 shrink-0">
-                    <div class="flex items-center gap-2 min-w-0">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-2 mb-2 border-b border-zinc-800/70 shrink-0">
+                    <div class="flex items-center gap-2 min-w-0 shrink-0">
                         <div class="p-1.5 rounded-lg bg-[#1DB954]/15 text-[#1DB954] shrink-0">
                             <i data-lucide="music" class="w-4 h-4"></i>
                         </div>
@@ -239,15 +239,17 @@
                         </div>
                     </div>
 
-                    <button type="button" onclick="toggleSpotifyInput()"
-                            class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition shrink-0">
-                        <i data-lucide="plus" class="w-3.5 h-3.5 text-[#1DB954]"></i>
-                        <span>Agregar</span>
-                    </button>
-                </div>
+                    <div class="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+                        <!-- Saved Playlists Pills aligned at the same height as Agregar -->
+                        <div id="spotify-playlists-bar" class="flex items-center gap-1.5 overflow-x-auto min-w-0 py-0.5"></div>
 
-                <!-- Saved Playlists Pills with Delete Button -->
-                <div id="spotify-playlists-bar" class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 border-b border-zinc-800/70 shrink-0"></div>
+                        <button type="button" onclick="toggleSpotifyInput()"
+                                class="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1 transition shrink-0">
+                            <i data-lucide="plus" class="w-3.5 h-3.5 text-[#1DB954]"></i>
+                            <span>Agregar</span>
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Add Playlist Form -->
                 <div id="spotify-url-form" class="hidden mb-2 shrink-0">
@@ -349,28 +351,26 @@
 
                 <!-- Top Video Bar -->
                 <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 shrink-0">
-                    <div class="flex items-center gap-2 min-w-0">
+                    <div class="flex items-center gap-2 min-w-0 flex-1">
                         <div class="p-1.5 rounded-xl bg-emerald-500/15 text-emerald-400 shrink-0">
                             <i data-lucide="play-circle" class="w-4 h-4"></i>
                         </div>
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-1">
-                                <span id="video-counter-badge" class="px-1.5 py-0.5 text-[10px] font-semibold rounded-md bg-emerald-500/20 text-emerald-300 shrink-0">
-                                    Video 1 de 4
-                                </span>
-                                <span id="video-platform-badge" class="px-1.5 py-0.5 text-[10px] font-medium rounded-md bg-zinc-800 text-zinc-300 shrink-0">
-                                    YouTube
-                                </span>
-                            </div>
-                            <h2 id="current-video-title" class="text-xs sm:text-sm font-bold text-white truncate mt-1">
+                        <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                            <span id="video-counter-badge" class="px-1.5 py-0.5 text-[10px] font-semibold rounded-md bg-emerald-500/20 text-emerald-300 shrink-0">
+                                Video 1 de 4
+                            </span>
+                            <span id="video-platform-badge" class="px-1.5 py-0.5 text-[10px] font-medium rounded-md bg-zinc-800 text-zinc-300 shrink-0">
+                                YouTube
+                            </span>
+                            <h2 id="current-video-title" class="text-xs sm:text-sm font-bold text-white truncate">
                                 Cargando rutina...
                             </h2>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-1.5 shrink-0">
-                        <label class="flex items-center gap-1.5 cursor-pointer bg-zinc-950 border border-zinc-800 px-2 py-1 rounded-xl select-none" title="Avance automático">
-                            <span class="text-[11px] font-medium text-zinc-300">Auto</span>
+                        <label class="flex items-center gap-1.5 cursor-pointer bg-zinc-950 border border-zinc-800 px-2.5 py-1.5 rounded-xl select-none" title="Avance automático">
+                            <span class="text-xs font-medium text-zinc-300">Auto</span>
                             <div class="relative">
                                 <input type="checkbox" id="auto-advance-toggle" checked onchange="toggleAutoAdvance(this.checked)" class="sr-only peer">
                                 <div class="w-7 h-3.5 bg-zinc-700 rounded-full peer peer-checked:bg-emerald-500 transition-colors"></div>
@@ -943,10 +943,22 @@
 
         function deleteDailyTask(taskId) {
             const list = tasksByDate[selectedDateStr] || [];
-            tasksByDate[selectedDateStr] = list.filter(t => t.id !== taskId);
-            if (tasksByDate[selectedDateStr].length === 0) {
-                delete tasksByDate[selectedDateStr];
+            const targetTask = list.find(t => t.id === taskId);
+
+            if (targetTask && targetTask.batchId) {
+                Object.keys(tasksByDate).forEach(dateKey => {
+                    tasksByDate[dateKey] = (tasksByDate[dateKey] || []).filter(t => t.batchId !== targetTask.batchId);
+                    if (tasksByDate[dateKey].length === 0) {
+                        delete tasksByDate[dateKey];
+                    }
+                });
+            } else {
+                tasksByDate[selectedDateStr] = list.filter(t => t.id !== taskId);
+                if (tasksByDate[selectedDateStr].length === 0) {
+                    delete tasksByDate[selectedDateStr];
+                }
             }
+
             saveJSON(STORAGE_KEYS.TASKS, tasksByDate);
             renderCalendarHeaderAndStrip();
             renderDailyTasks();
@@ -1364,13 +1376,13 @@
 
             if (bar) {
                 if (spotifyLists.length === 0) {
-                    bar.innerHTML = `<span class="text-[11px] text-zinc-500 py-1">No hay playlists guardadas. Pulsa "Agregar Playlist".</span>`;
+                    bar.innerHTML = `<span class="text-[11px] text-zinc-500 py-1.5">Sin playlists</span>`;
                 } else {
                     bar.innerHTML = spotifyLists.map(item => {
                         const isActive = item.id === activeSpotifyId;
                         return `
                             <div onclick="selectSpotifyPlaylist('${item.id}')"
-                                 class="group flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs cursor-pointer shrink-0 transition ${
+                                 class="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs cursor-pointer shrink-0 transition ${
                                      isActive
                                          ? 'bg-[#1DB954]/15 border-[#1DB954]/60 text-white font-semibold'
                                          : 'bg-zinc-950/80 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
