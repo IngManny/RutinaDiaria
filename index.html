@@ -243,8 +243,8 @@
                     </div>
                 </form>
 
-                <!-- Always-Visible Tasks List with Lateral Scrollbar -->
-                <div id="daily-tasks-list" class="tasks-scroll-area flex-1 min-h-[150px] max-h-[260px] sm:max-h-[300px] overflow-y-scroll pr-1.5"></div>
+                <!-- 5-Row Visible Tasks List with Lateral Scrollbar -->
+                <div id="daily-tasks-list" class="tasks-scroll-area h-[214px] max-h-[214px] overflow-y-scroll pr-1.5 shrink-0"></div>
             </section>
 
             <!-- ROW 2: Spotify Playlists (Add, Switch & Delete) -->
@@ -1069,11 +1069,11 @@
 
             if (list.length === 0) {
                 itemsHtml = `
-                    <li class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-zinc-950/60 border border-dashed border-zinc-800/90 text-xs text-zinc-500">
+                    <li class="h-[38px] flex items-center justify-between gap-2 px-3 rounded-xl bg-zinc-950/60 border border-dashed border-zinc-800/90 text-xs text-zinc-500">
                         <span>1. Sin tareas programadas en este día</span>
                         <span class="text-[10px] text-zinc-600">Agrega una arriba</span>
                     </li>
-                    <li class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-zinc-950/40 border border-dashed border-zinc-800/60 text-xs text-zinc-600">
+                    <li class="h-[38px] flex items-center justify-between gap-2 px-3 rounded-xl bg-zinc-950/40 border border-dashed border-zinc-800/60 text-xs text-zinc-600">
                         <span>2. Usa grupos de días para repetir</span>
                         <span class="text-[10px]">Lun-Vie · L/M/V · M/J</span>
                     </li>
@@ -1088,7 +1088,7 @@
                         : '';
 
                     return `
-                        <li class="flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-zinc-950/90 border border-zinc-800/80 hover:border-zinc-700 transition">
+                        <li class="h-[38px] flex items-center justify-between gap-2 px-2.5 rounded-xl bg-zinc-950/90 border border-zinc-800/80 hover:border-zinc-700 transition">
                             <label class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer select-none">
                                 <span class="text-[11px] font-mono text-zinc-500 w-4 shrink-0">${index + 1}.</span>
                                 <input type="checkbox" ${checkedAttr} onchange="toggleTaskCompletion('${task.id}')"
