@@ -59,6 +59,27 @@
             background: #52525b;
         }
 
+        /* Visible vertical scrollbar for task list */
+        .tasks-scroll-area {
+            scrollbar-width: thin;
+            scrollbar-color: #52525b #18181b;
+        }
+        .tasks-scroll-area::-webkit-scrollbar {
+            width: 8px;
+        }
+        .tasks-scroll-area::-webkit-scrollbar-track {
+            background: #18181b;
+            border-radius: 8px;
+        }
+        .tasks-scroll-area::-webkit-scrollbar-thumb {
+            background: #52525b;
+            border-radius: 8px;
+            border: 2px solid #18181b;
+        }
+        .tasks-scroll-area::-webkit-scrollbar-thumb:hover {
+            background: #71717a;
+        }
+
         /* Responsive media stage */
         .video-wrapper iframe,
         .video-wrapper video {
@@ -97,7 +118,7 @@
         <div class="flex-1 w-full flex flex-col gap-3 p-3 sm:p-4 lg:overflow-y-auto">
 
             <!-- ROW 1: Daily Calendar, Task Groups & Sync -->
-            <section class="w-full min-h-[260px] lg:flex-1 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col shadow-xl overflow-hidden">
+            <section class="w-full min-h-[340px] lg:min-h-[360px] shrink-0 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col shadow-xl">
                 <!-- Header & Controls -->
                 <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-zinc-800/80 shrink-0">
                     <div class="flex items-center gap-2">
@@ -222,8 +243,8 @@
                     </div>
                 </form>
 
-                <!-- Always-Visible Tasks List -->
-                <div id="daily-tasks-list" class="flex-1 overflow-y-auto pr-1"></div>
+                <!-- Always-Visible Tasks List with Lateral Scrollbar -->
+                <div id="daily-tasks-list" class="tasks-scroll-area flex-1 min-h-[150px] max-h-[260px] sm:max-h-[300px] overflow-y-scroll pr-1.5"></div>
             </section>
 
             <!-- ROW 2: Spotify Playlists (Add, Switch & Delete) -->
